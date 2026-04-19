@@ -1,6 +1,7 @@
 import { EXERCISE_MUSCLE_MAP } from './exerciseMap';
 
 export interface IWorkout {
+  _id?: string;
   date: string;
   exercises: {
     name: string;

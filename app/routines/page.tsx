@@ -19,14 +19,21 @@ export default function RoutinesPage() {
   const [newExercises, setNewExercises] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const fetchRoutines = async () => {
+    try {
+      const res = await fetch('/api/routines');
+      const json = await res.json();
+      if (json.success) setRoutines(json.data);
+    } catch (error) {
+      console.error('Failed to fetch routines:', error);
+    } finally {
+      setDataFetched(true);
+    }
+  };
+
   useEffect(() => {
     if (status === 'authenticated' && !dataFetched) {
-      fetch('/api/routines')
-        .then(res => res.json())
-        .then(json => {
-          if (json.success) setRoutines(json.data);
-        })
-        .finally(() => setDataFetched(true));
+      fetchRoutines();
     }
   }, [status, dataFetched]);
 
@@ -45,10 +52,7 @@ export default function RoutinesPage() {
       if (res.ok) {
         setNewName('');
         setNewExercises('');
-        // Refetch
-        const refetchRes = await fetch('/api/routines');
-        const json = await refetchRes.json();
-        if (json.success) setRoutines(json.data);
+        fetchRoutines();
       }
     } catch (error) {
       console.error('Failed to create routine:', error);
