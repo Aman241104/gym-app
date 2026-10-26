@@ -239,3 +239,15 @@ fun formatPace(seconds: Long, meters: Double): String {
     val perKm = (seconds / (meters / 1000)).toLong()
     return "%d:%02d /km".format(perKm / 60, perKm % 60)
 }
+
+/** Pace targets from a 5K-ish effort (Riegel-scaled to 5 km), as min/km strings. */
+data class PaceZones(val easy: String, val tempo: String, val interval: String)
+
+fun paceZones(runs: List<app.gymapp.data.Run>): PaceZones? {
+    // Best effort among runs of at least 5 km, scaled to exactly 5 km with Riegel's formula.
+    val best = runs.filter { it.distanceM >= 5000 && it.durationSec > 0 }
+        .minOfOrNull { it.durationSec * Math.pow(5000.0 / it.distanceM, 1.06) } ?: return null
+    val perKm = best / 5
+    fun f(sec: Double) = "%d:%02d".format((sec / 60).toInt(), (sec % 60).toInt())
+    return PaceZones("${f(perKm * 1.25)}-${f(perKm * 1.35)}", f(perKm * 1.08), f(perKm * 0.98))
+}

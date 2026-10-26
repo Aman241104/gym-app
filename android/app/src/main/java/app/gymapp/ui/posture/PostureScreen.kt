@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import app.gymapp.data.Repo
 import app.gymapp.domain.postureRoutine
+import app.gymapp.domain.runnerStretches
 import app.gymapp.domain.streak
 import app.gymapp.ui.Muted
 import app.gymapp.ui.Panel
@@ -65,10 +66,10 @@ private const val READY_MS = 5_000L
 
 /** Guided posture block: a 5-second "get ready" before each move, then a timed hold with cues. */
 @Composable
-fun PostureScreen(onDone: () -> Unit, onScan: () -> Unit) {
+fun PostureScreen(onDone: () -> Unit, onScan: () -> Unit, runner: Boolean = false) {
     val settings by Repo.settings.collectAsState()
     val days by Repo.postureDays.collectAsState()
-    val moves = remember(settings.equipment) { postureRoutine(settings.equipment) }
+    val moves = remember(settings.equipment, runner) { if (runner) runnerStretches() else postureRoutine(settings.equipment) }
     var started by rememberSaveable { mutableStateOf(false) }
     var finished by rememberSaveable { mutableStateOf(false) }
     var index by rememberSaveable { mutableIntStateOf(0) }
@@ -131,7 +132,7 @@ fun PostureScreen(onDone: () -> Unit, onScan: () -> Unit) {
             }
             else -> {
                 buzz(600)
-                Repo.logPosture()
+                if (!runner) Repo.logPosture()
                 finished = true
             }
         }
@@ -161,10 +162,10 @@ fun PostureScreen(onDone: () -> Unit, onScan: () -> Unit) {
             !started -> {
                 item {
                     Panel {
-                        Text("10 minutes for forward head and rounded shoulders", style = MaterialTheme.typography.titleLarge)
+                        Text(if (runner) "6 minutes to cool down after your run" else "10 minutes for forward head and rounded shoulders", style = MaterialTheme.typography.titleLarge)
                         Muted("Stretch the tight front, free the upper back, then strengthen the back of the shoulders. Moves adapt to the equipment you ticked.")
                         Muted("Stop any move that causes pain, tingling or numbness.")
-                        TextButton(onClick = onScan) { Text("Check my posture with a photo") }
+                        if (!runner) TextButton(onClick = onScan) { Text("Check my posture with a photo") }
                     }
                 }
                 items(moves) { m ->
@@ -214,7 +215,7 @@ fun PostureScreen(onDone: () -> Unit, onScan: () -> Unit) {
                             Icon(if (paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause, contentDescription = if (paused) "Resume" else "Pause", modifier = Modifier.size(36.dp))
                         }
                         IconButton(onClick = {
-                            if (index < moves.lastIndex) goTo(index + 1) else { Repo.logPosture(); finished = true }
+                            if (index < moves.lastIndex) goTo(index + 1) else { if (!runner) Repo.logPosture(); finished = true }
                         }) { Icon(Icons.Rounded.SkipNext, contentDescription = "Next move") }
                     }
                 }

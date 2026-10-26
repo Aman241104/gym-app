@@ -42,6 +42,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
 import app.gymapp.ui.glass.GlassLook
+import app.gymapp.ui.glass.LiquidButton
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.graphics.vector.ImageVector
 import app.gymapp.ui.glass.LiquidBottomTab
 import app.gymapp.ui.glass.LiquidBottomTabs
 import com.kyant.backdrop.Backdrop
@@ -57,6 +65,13 @@ internal val tabs = listOf(
 /** Leaves room under the floating glass dock. */
 internal val ScreenPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 128.dp)
 
+/** The dock's context button: what the current page's main action is. */
+internal data class DockAction(val icon: ImageVector, val label: String, val tint: Color, val onClick: () -> Unit)
+
+/**
+ * Glass tab bar plus a context button on the right that morphs per page (start, run, scan, sync),
+ * the iOS 26 "tab bar + accessory" pattern built on the same Kyant backdrop.
+ */
 @Composable
 internal fun BottomBar(
     selected: () -> Int,
@@ -64,12 +79,14 @@ internal fun BottomBar(
     backdrop: Backdrop,
     look: GlassLook,
     isLight: Boolean,
+    action: DockAction?,
     modifier: Modifier,
 ) {
     val content = MaterialTheme.colorScheme.onSurface
     Row(
         modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         LiquidBottomTabs(
             selectedTabIndex = selected,
@@ -79,12 +96,19 @@ internal fun BottomBar(
             accentColor = MaterialTheme.colorScheme.primary,
             isLight = isLight,
             look = look,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.weight(1f),
         ) {
             tabs.forEachIndexed { index, (label, icon) ->
                 LiquidBottomTab({ onSelect(index) }) {
-                    Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(24.dp))
-                    Text(label, style = MaterialTheme.typography.labelSmall, color = content)
+                    Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(22.dp))
+                    Text(label, style = MaterialTheme.typography.labelSmall, color = content, maxLines = 1)
+                }
+            }
+        }
+        if (action != null) {
+            LiquidButton(onClick = action.onClick, backdrop = backdrop, tint = action.tint, modifier = Modifier.size(64.dp)) {
+                AnimatedContent(action, transitionSpec = { (scaleIn() + fadeIn()) togetherWith (scaleOut() + fadeOut()) }, contentKey = { it.label }, label = "dock") { a ->
+                    Icon(a.icon, contentDescription = a.label, tint = Color.White, modifier = Modifier.size(26.dp))
                 }
             }
         }

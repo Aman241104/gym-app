@@ -47,6 +47,15 @@ import app.gymapp.data.Repo
 import app.gymapp.data.SetEntry
 import app.gymapp.data.Workout
 import app.gymapp.domain.LibExercise
+import app.gymapp.domain.PersonalRecord
+import app.gymapp.domain.findPRs
+import app.gymapp.ui.design.Accent
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import app.gymapp.domain.PlanDay
 import app.gymapp.domain.doableWith
 import app.gymapp.ui.library.ExerciseSheet
@@ -59,6 +68,13 @@ import app.gymapp.ui.Panel
 internal class SetDraft(reps: String, weight: String) {
     var reps by mutableStateOf(reps)
     var weight by mutableStateOf(weight)
+    /** Ticked off in the gym; ticking starts the rest timer. Purely a logging aid. */
+    var done by mutableStateOf(false)
+}
+
+/** Personal records from the last save, shown as a celebration over whatever screen is next. */
+internal object Celebrate {
+    var records by mutableStateOf<List<PersonalRecord>>(emptyList())
 }
 
 /** [target] is the plan's "3 × 8-10" when the exercise came from today's plan. */
@@ -74,6 +90,21 @@ internal object Draft {
     var editing by mutableStateOf<Workout?>(null)
     /** Wall-clock end of the running rest timer, 0 when none. */
     var restEndsAt by mutableLongStateOf(0L)
+    /** Rest length the next ticked set starts; set by the preset chips. */
+    var restSeconds by mutableIntStateOf(90)
+
+    fun startRest() {
+        restEndsAt = System.currentTimeMillis() + restSeconds * 1000L
+    }
+
+    /** Saves the session (new or edited) and queues PR confetti for new sessions. */
+    fun save(history: List<Workout>) {
+        val done = toExercises()
+        if (done.isEmpty()) return
+        if (editing == null) Celebrate.records = findPRs(history, done)
+        Repo.saveWorkout(done, editing)
+        clear()
+    }
 
     fun load(workout: Workout) {
         clear()
@@ -132,7 +163,8 @@ fun LogScreen(onDone: () -> Unit) {
 
     LazyColumn(
         Modifier.imePadding(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
+        // Bottom room for the session dock that replaces the tab bar while logging.
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 140.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
@@ -142,10 +174,10 @@ fun LogScreen(onDone: () -> Unit) {
                 if (Draft.exercises.isNotEmpty()) TextButton(onClick = { Draft.clear(); onDone() }) { Text("Discard") }
             }
         }
-        if (Draft.editing == null) item { RestTimer() }
+        if (Draft.editing == null) item { RestPresets() }
         itemsIndexed(Draft.exercises, key = { _, e -> e.name }) { _, exercise ->
             ExerciseCard(
-                exercise, settings.unit,
+                exercise, settings.unit, history[exercise.name.lowercase()],
                 onRemove = { Draft.exercises.remove(exercise) },
                 onInfo = byName[exercise.name.lowercase()]?.let { lib -> { detail = lib } },
             )
@@ -173,28 +205,23 @@ fun LogScreen(onDone: () -> Unit) {
                 items(names) { name -> SuggestionChip(onClick = { add(name) }, label = { Text(name) }) }
             }
         }
-        item {
-            Button(
-                onClick = {
-                    Repo.saveWorkout(Draft.toExercises(), Draft.editing)
-                    Draft.clear()
-                    onDone()
-                },
-                enabled = ready,
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 8.dp),
-            ) { Text(if (Draft.editing != null) "Save changes" else "Finish & save", style = MaterialTheme.typography.titleMedium) }
-        }
     }
     detail?.let { ExerciseSheet(it, onDismiss = { detail = null }) }
 }
 
 @Composable
-private fun ExerciseCard(exercise: ExerciseDraft, unit: String, onRemove: () -> Unit, onInfo: (() -> Unit)?) {
-    Panel {
+private fun ExerciseCard(exercise: ExerciseDraft, unit: String, last: Exercise?, onRemove: () -> Unit, onInfo: (() -> Unit)?) {
+    val accent = Accent.Train.color
+    val haptics = LocalHapticFeedback.current
+    Panel(accent = if (exercise.sets.isNotEmpty() && exercise.sets.all { it.done }) accent else null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(exercise.name, style = MaterialTheme.typography.titleLarge)
                 exercise.target?.let { Muted("Target $it") }
+                last?.let { l ->
+                    val weights = l.sets.map { formatWeight(it.weight) }.distinct()
+                    Muted("Last: " + (if (weights.size == 1) "${weights[0]} $unit × " + l.sets.joinToString(", ") { "${it.reps}" } else l.sets.joinToString(", ") { "${formatWeight(it.weight)}×${it.reps}" }))
+                }
             }
             if (onInfo != null) IconButton(onClick = onInfo) { Icon(Icons.Rounded.Info, contentDescription = "How to do ${exercise.name}") }
             IconButton(onClick = onRemove) { Icon(Icons.Rounded.Close, contentDescription = "Remove ${exercise.name}") }
@@ -210,17 +237,30 @@ private fun ExerciseCard(exercise: ExerciseDraft, unit: String, onRemove: () -> 
                     value = set.reps, onValueChange = { set.reps = it.filter(Char::isDigit) }, label = { Text("reps") }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = { exercise.sets.removeAt(i) }, enabled = exercise.sets.size > 1) {
-                    Icon(Icons.Rounded.Close, contentDescription = "Remove set ${i + 1}")
+                // One tap = set done + rest timer started, like Hevy/Strong.
+                IconButton(onClick = {
+                    set.done = !set.done
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    if (set.done) Draft.startRest()
+                }) {
+                    Icon(
+                        if (set.done) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+                        contentDescription = if (set.done) "Set ${i + 1} done" else "Mark set ${i + 1} done",
+                        tint = if (set.done) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(30.dp),
+                    )
                 }
             }
         }
-        TextButton(onClick = {
-            val last = exercise.sets.lastOrNull()
-            exercise.sets.add(SetDraft(last?.reps.orEmpty(), last?.weight.orEmpty()))
-        }) {
-            Icon(Icons.Rounded.Add, contentDescription = null)
-            Text(" Add set")
+        Row {
+            TextButton(onClick = {
+                val prev = exercise.sets.lastOrNull()
+                exercise.sets.add(SetDraft(prev?.reps.orEmpty(), prev?.weight.orEmpty()))
+            }) {
+                Icon(Icons.Rounded.Add, contentDescription = null)
+                Text(" Add set")
+            }
+            if (exercise.sets.size > 1) TextButton(onClick = { exercise.sets.removeAt(exercise.sets.lastIndex) }) { Text("Remove last") }
         }
     }
 }

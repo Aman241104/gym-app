@@ -32,6 +32,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
@@ -72,7 +73,7 @@ private fun fmt(v: Double) = if (v >= 10 || v % 1.0 == 0.0) "%.0f".format(v) els
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun EatScreen() {
+fun EatScreen(scanSignal: Int = 0, onScanHandled: () -> Unit = {}) {
     val settings by Repo.settings.collectAsState()
     val foods by Repo.foods.collectAsState()
     val log by Repo.food.collectAsState()
@@ -85,6 +86,25 @@ fun EatScreen() {
     var scanNote by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    fun scan() {
+        scanNote = null
+        GmsBarcodeScanning.getClient(context).startScan().addOnSuccessListener { code ->
+            val raw = code.rawValue ?: return@addOnSuccessListener
+            scanNote = "Looking up $raw…"
+            scope.launch {
+                val found = OpenFoodFacts.lookup(raw)
+                scanNote = if (found == null) "Not in Open Food Facts yet. Search by name instead." else null
+                adding = found
+            }
+        }
+    }
+    LaunchedEffect(scanSignal) {
+        if (scanSignal > 0) {
+            onScanHandled()
+            scan()
+        }
+    }
 
     LazyColumn(contentPadding = ScreenPadding, verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { ScreenHeader(today.format(DateTimeFormatter.ofPattern("EEEE, d MMM")), "Eat", "well", Accent.Eat.color) }
@@ -115,18 +135,7 @@ fun EatScreen() {
                     value = query, onValueChange = { query = it }, label = { Text("Search food (roti, dal, paneer…)") },
                     singleLine = true, modifier = Modifier.weight(1f),
                 )
-                FilledTonalIconButton(onClick = {
-                    scanNote = null
-                    GmsBarcodeScanning.getClient(context).startScan().addOnSuccessListener { code ->
-                        val raw = code.rawValue ?: return@addOnSuccessListener
-                        scanNote = "Looking up $raw…"
-                        scope.launch {
-                            val found = OpenFoodFacts.lookup(raw)
-                            scanNote = if (found == null) "Not in Open Food Facts yet. Search by name instead." else null
-                            adding = found
-                        }
-                    }
-                }, colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Accent.Eat.color.copy(alpha = 0.22f), contentColor = Accent.Eat.color), modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.QrCodeScanner, contentDescription = "Scan a barcode") }
+                FilledTonalIconButton(onClick = { scan() }, colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Accent.Eat.color.copy(alpha = 0.22f), contentColor = Accent.Eat.color), modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.QrCodeScanner, contentDescription = "Scan a barcode") }
             }
         }
         scanNote?.let { note -> item { Muted(note) } }

@@ -27,4 +27,14 @@ class StatsTest {
         assertEquals(10, suggest(ex(9 to 40.0), "kg")!!.reps)
         assertEquals(40.0, suggest(ex(6 to 40.0), "kg")!!.weight, 0.0)
     }
+
+    @Test fun personalRecords() {
+        val old = Workout(date = "2026-10-20T10:00:00Z", exercises = listOf(Exercise("Bench Press", listOf(SetEntry(5, 60.0), SetEntry(5, 57.5)))))
+        val prs = findPRs(listOf(old), listOf(
+            Exercise("bench press", listOf(SetEntry(3, 62.5))), // heavier: PR (case-insensitive)
+            Exercise("Squat", listOf(SetEntry(5, 100.0))),      // never done: not a PR
+        ))
+        assertEquals(listOf(PersonalRecord("bench press", 62.5, 60.0)), prs)
+        assertEquals(emptyList<PersonalRecord>(), findPRs(listOf(old), listOf(Exercise("Bench Press", listOf(SetEntry(8, 60.0))))))
+    }
 }

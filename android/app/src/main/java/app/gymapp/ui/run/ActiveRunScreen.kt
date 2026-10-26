@@ -42,10 +42,12 @@ import app.gymapp.run.formatClock
 import app.gymapp.run.formatPace
 import app.gymapp.ui.Muted
 import app.gymapp.ui.Panel
+import app.gymapp.ui.design.Accent
+import androidx.compose.material3.ButtonDefaults
 
 /** Live view of [RunService]; the run keeps going if this screen is left or the phone locks. */
 @Composable
-fun ActiveRunScreen(onClose: () -> Unit) {
+fun ActiveRunScreen(onClose: () -> Unit, onStretch: () -> Unit = {}) {
     val context = LocalContext.current
     val s by RunService.state.collectAsState()
     var confirmStop by remember { mutableStateOf(false) }
@@ -59,7 +61,12 @@ fun ActiveRunScreen(onClose: () -> Unit) {
                 Stat("Pace", formatPace(run.durationSec.toLong(), run.distanceM.toDouble()))
             }
             Muted("Stretch your calves, hip flexors and hamstrings now while you're warm.")
-            Button(onClick = { RunService.dismissSummary(); onClose() }, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Done") }
+            Button(
+                onClick = { RunService.dismissSummary(); onStretch() },
+                colors = ButtonDefaults.buttonColors(containerColor = Accent.Run.color),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+            ) { Text("Stretch now · 6 min") }
+            TextButton(onClick = { RunService.dismissSummary(); onClose() }, modifier = Modifier.fillMaxWidth()) { Text("Done") }
         }
         return
     }

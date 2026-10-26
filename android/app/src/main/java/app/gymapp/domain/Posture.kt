@@ -142,3 +142,27 @@ fun postureRoutine(equipment: List<String>): List<Move> {
         ))
     }
 }
+
+/** After-run cooldown: calves, hamstrings, hip flexors, quads and glutes, ~6 minutes. */
+fun runnerStretches(): List<Move> = buildList {
+    addAll(bothSides("Calf stretch on a wall", 30, listOf(
+        "Hands on a wall, one foot back, heel down, back knee straight.",
+        "Lean in until you feel the calf. Then bend the back knee slightly for the lower calf.",
+    ), "Running loads the calves more than anything else."))
+    addAll(bothSides("Standing hamstring stretch", 30, listOf(
+        "Heel on a low step or kerb, leg straight, toes up.",
+        "Hinge forward from the hips with a flat back until you feel the back of the thigh.",
+    ), "Keeps the hamstrings from tightening up after runs."))
+    addAll(bothSides("Half-kneeling hip flexor stretch", 30, listOf(
+        "Kneel on one knee, other foot in front.",
+        "Squeeze the glute of the kneeling side and shift your hips forward. Keep your ribs down.",
+    ), "Hip flexors shorten with running and sitting; this also helps posture."))
+    addAll(bothSides("Standing quad stretch", 30, listOf(
+        "Hold a wall, pull one heel toward your glute.",
+        "Knees together, hips pushed slightly forward.",
+    ), "Releases the front of the thigh after striding."))
+    addAll(bothSides("Figure-4 glute stretch", 30, listOf(
+        "Lie on your back, ankle over the opposite knee.",
+        "Pull the bottom thigh toward you until you feel the outer hip.",
+    ), "Glutes and outer hips work hard to keep your pelvis level."))
+}

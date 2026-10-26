@@ -214,6 +214,22 @@ fun PostureScanScreen(onBack: () -> Unit) {
         }
         val sides = scans.filter { it.kind == "side" }.sortedBy { it.date }
         if (sides.size >= 2) item { ThenAndNow(context, sides.first(), sides.last()) }
+        if (sides.size >= 2) item {
+            // Head-forward trend: lower is better, so a falling line is progress.
+            val values = sides.mapNotNull { it.headForward }
+            val accent = Accent.Posture.color
+            Panel {
+                Text("Head-forward trend", style = MaterialTheme.typography.titleMedium)
+                Canvas(Modifier.fillMaxWidth().height(120.dp).padding(vertical = 8.dp)) {
+                    val lo = values.min() - 2
+                    val hi = values.max() + 2
+                    val pts = values.mapIndexed { i, v -> Offset(i * size.width / (values.size - 1).coerceAtLeast(1), size.height * (v - lo) / (hi - lo)) }
+                    pts.zipWithNext { a, b -> drawLine(accent, a, b, 4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round) }
+                    pts.forEach { drawCircle(accent, 5.dp.toPx(), it) }
+                }
+                Muted("%.0f° first · %.0f° now · lower is better".format(values.first(), values.last()))
+            }
+        }
         if (scans.isNotEmpty()) {
             item { Text("History", style = MaterialTheme.typography.titleLarge) }
             items(scans.sortedByDescending { it.date }) { s ->

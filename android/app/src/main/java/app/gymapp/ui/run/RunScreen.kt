@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +44,7 @@ import app.gymapp.domain.runDays
 import app.gymapp.run.RunService
 import app.gymapp.run.formatClock
 import app.gymapp.run.formatPace
+import app.gymapp.run.paceZones
 import app.gymapp.ui.Muted
 import app.gymapp.ui.Panel
 import app.gymapp.ui.ScreenHeader
@@ -57,7 +59,7 @@ import java.util.Locale
 private val dayFormat = DateTimeFormatter.ofPattern("EEE d MMM")
 
 @Composable
-fun RunScreen(onOpenRun: () -> Unit) {
+fun RunScreen(onOpenRun: () -> Unit, startSignal: Int = 0, onStartHandled: () -> Unit = {}) {
     val context = LocalContext.current
     val runs by Repo.runs.collectAsState()
     val live by RunService.state.collectAsState()
@@ -74,6 +76,14 @@ fun RunScreen(onOpenRun: () -> Unit) {
     fun begin(code: String?) {
         pending = code
         permissions.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.POST_NOTIFICATIONS))
+    }
+
+    // The dock's run button: start the next session (or open the live one) without scrolling.
+    LaunchedEffect(startSignal) {
+        if (startSignal > 0) {
+            onStartHandled()
+            if (live.active) onOpenRun() else begin(next.code)
+        }
     }
 
     LazyColumn(contentPadding = ScreenPadding, verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -118,6 +128,20 @@ fun RunScreen(onOpenRun: () -> Unit) {
                             Muted("W${w + 1}")
                         }
                     }
+                }
+            }
+        }
+        item {
+            val zones = paceZones(runs)
+            Panel(accent = Accent.Run.color) {
+                Text("Pace zones", style = MaterialTheme.typography.titleMedium)
+                if (zones == null) {
+                    Muted("Unlocks after your first 5 km run. Until then, run at a pace where you can still talk.")
+                } else {
+                    Row { Muted("Easy", Modifier.weight(1f)); Text("${zones.easy} /km", style = MaterialTheme.typography.bodyLarge) }
+                    Row { Muted("Tempo", Modifier.weight(1f)); Text("${zones.tempo} /km", style = MaterialTheme.typography.bodyLarge) }
+                    Row { Muted("Intervals", Modifier.weight(1f)); Text("${zones.interval} /km", style = MaterialTheme.typography.bodyLarge) }
+                    Muted("From your best 5 km. Most runs should be easy.")
                 }
             }
         }

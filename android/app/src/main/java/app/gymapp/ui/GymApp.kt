@@ -27,6 +27,26 @@ import app.gymapp.data.Repo
 import app.gymapp.ui.eat.EatScreen
 import app.gymapp.ui.mind.BreatheScreen
 import app.gymapp.ui.design.Aurora
+import app.gymapp.ui.design.Confetti
+import androidx.compose.ui.unit.dp
+import app.gymapp.domain.formatWeight
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
+import app.gymapp.ui.design.Accent
+import app.gymapp.ui.train.Celebrate
+import app.gymapp.ui.train.Draft
+import app.gymapp.ui.train.SessionDock
+import app.gymapp.domain.lastByExercise
+import app.gymapp.run.RunService
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.runtime.collectAsState
+import java.time.LocalDate
 import app.gymapp.ui.design.StatusScrim
 import app.gymapp.ui.glass.GlassLook
 import app.gymapp.ui.posture.PostureScanScreen
@@ -80,6 +100,26 @@ private fun MainScaffold(dark: Boolean) {
 
     val startWorkout = { route = "log" }
     val close = { route = null }
+    // Dock button -> screen hand-offs for actions that live inside a screen (permissions, scanner).
+    var runSignal by remember { mutableIntStateOf(0) }
+    var scanSignal by remember { mutableIntStateOf(0) }
+    val planState = rememberWeekPlan()
+    val workouts by Repo.workouts.collectAsState()
+    val settings by Repo.settings.collectAsState()
+    val live by RunService.state.collectAsState()
+    val action = when (tab) {
+        0 -> DockAction(Icons.Rounded.PlayArrow, "Start today's session", Accent.Train.color) {
+            val day = planState?.first?.on(LocalDate.now().dayOfWeek)
+            if (Draft.exercises.isEmpty() && day != null) Draft.loadPlan(day, lastByExercise(workouts), settings.unit)
+            route = "log"
+        }
+        1 -> DockAction(Icons.Rounded.Add, "New workout", Accent.Train.color) { route = "log" }
+        2 -> DockAction(Icons.AutoMirrored.Rounded.DirectionsRun, if (live.active) "Open run" else "Start run", Accent.Run.color) {
+            if (live.active) route = "running" else runSignal++
+        }
+        3 -> DockAction(Icons.Rounded.QrCodeScanner, "Scan a barcode", Accent.Eat.color) { scanSignal++ }
+        else -> DockAction(Icons.Rounded.Sync, "Sync now", Accent.Mind.color) { Repo.syncNow() }
+    }
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().layerBackdrop(backdrop)) {
             Aurora()
@@ -87,13 +127,14 @@ private fun MainScaffold(dark: Boolean) {
                 "log" -> LogScreen(onDone = close)
                 "posture" -> PostureScreen(onDone = close, onScan = { route = "scan" })
                 "scan" -> PostureScanScreen(onBack = { route = "posture" })
-                "running" -> ActiveRunScreen(onClose = close)
+                "running" -> ActiveRunScreen(onClose = close, onStretch = { route = "stretch" })
+                "stretch" -> PostureScreen(onDone = close, onScan = {}, runner = true)
                 "breathe" -> BreatheScreen(onClose = close)
                 else -> when (tab) {
                     0 -> TodayScreen(onStart = startWorkout, onPosture = { route = "posture" }, onRun = { tab = 2 }, onEat = { tab = 3 }, onBreathe = { route = "breathe" })
                     1 -> TrainScreen(onStart = startWorkout)
-                    2 -> RunScreen(onOpenRun = { route = "running" })
-                    3 -> EatScreen()
+                    2 -> RunScreen(onOpenRun = { route = "running" }, startSignal = runSignal, onStartHandled = { runSignal = 0 })
+                    3 -> EatScreen(scanSignal = scanSignal, onScanHandled = { scanSignal = 0 })
                     else -> YouScreen()
                 }
             }
@@ -106,8 +147,34 @@ private fun MainScaffold(dark: Boolean) {
                 backdrop = backdrop,
                 look = look,
                 isLight = !dark,
+                action = action,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
+        } else if (route == "log") {
+            SessionDock(backdrop, workouts, onFinished = close, modifier = Modifier.align(Alignment.BottomCenter))
+        }
+        if (Celebrate.records.isNotEmpty()) PrCelebration()
+    }
+}
+
+/** Confetti + a card listing the new records; dismisses itself after a few seconds or on tap. */
+@Composable
+private fun PrCelebration() {
+    val context = LocalContext.current
+    LaunchedEffect(Celebrate.records) {
+        context.getSystemService(android.os.Vibrator::class.java)
+            ?.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 60, 80, 60, 80, 220), -1))
+        kotlinx.coroutines.delay(4500)
+        Celebrate.records = emptyList()
+    }
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Confetti(listOf(Accent.Train.color, Accent.Run.color, Accent.Eat.color, Accent.Posture.color, Accent.Mind.color))
+        Panel(Modifier.padding(32.dp), accent = Accent.Train.color, onClick = { Celebrate.records = emptyList() }) {
+            Text("New personal record", style = MaterialTheme.typography.labelMedium, color = Accent.Train.color)
+            Celebrate.records.forEach { pr ->
+                Text("${pr.exercise}  ${formatWeight(pr.weight)}", style = MaterialTheme.typography.headlineSmall)
+                Muted("Previous best ${formatWeight(pr.previous)}")
+            }
         }
     }
 }

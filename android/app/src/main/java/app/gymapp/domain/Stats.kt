@@ -85,3 +85,16 @@ fun muscleBalance(workouts: List<Workout>, library: List<LibExercise>, today: Lo
     }
     return MuscleRegions.map { (region, muscles) -> region to muscles.sumOf { sets[it] ?: 0.0 } }
 }
+
+data class PersonalRecord(val exercise: String, val weight: Double, val previous: Double)
+
+/** New heaviest-weight records in [session] against all earlier [history]. First-ever exercises aren't records yet. */
+fun findPRs(history: List<Workout>, session: List<Exercise>): List<PersonalRecord> {
+    val best = mutableMapOf<String, Double>()
+    history.forEach { w -> w.exercises.forEach { e -> e.sets.forEach { s -> best.merge(e.name.lowercase(), s.weight, ::maxOf) } } }
+    return session.mapNotNull { e ->
+        val top = e.sets.maxOfOrNull { it.weight } ?: return@mapNotNull null
+        val prev = best[e.name.lowercase()] ?: return@mapNotNull null
+        if (top > prev && top > 0) PersonalRecord(e.name, top, prev) else null
+    }
+}
