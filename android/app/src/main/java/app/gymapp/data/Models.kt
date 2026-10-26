@@ -46,6 +46,18 @@ data class Run(
     val completed: Boolean,
 )
 
+/** One posture photo check. Photos stay in app storage on the phone; only these numbers are kept. */
+@Serializable
+data class PostureScan(
+    val date: String,
+    val kind: String, // "side" or "front"
+    val headForward: Float? = null,
+    val upperBack: Float? = null,
+    val shoulderTilt: Float? = null,
+    val hipTilt: Float? = null,
+    val photo: String,
+)
+
 /** Where the Next.js backend lives. Local only, never sent anywhere but that server. */
 @Serializable
 data class Server(val url: String = "", val token: String = "") {

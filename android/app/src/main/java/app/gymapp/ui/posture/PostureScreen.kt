@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -63,7 +64,7 @@ private const val READY_MS = 5_000L
 
 /** Guided posture block: a 5-second "get ready" before each move, then a timed hold with cues. */
 @Composable
-fun PostureScreen(onDone: () -> Unit) {
+fun PostureScreen(onDone: () -> Unit, onScan: () -> Unit) {
     val settings by Repo.settings.collectAsState()
     val days by Repo.postureDays.collectAsState()
     val moves = remember(settings.equipment) { postureRoutine(settings.equipment) }
@@ -162,6 +163,7 @@ fun PostureScreen(onDone: () -> Unit) {
                         Text("10 minutes for forward head and rounded shoulders", style = MaterialTheme.typography.titleLarge)
                         Muted("Stretch the tight front, free the upper back, then strengthen the back of the shoulders. Moves adapt to the equipment you ticked.")
                         Muted("Stop any move that causes pain, tingling or numbness.")
+                        TextButton(onClick = onScan) { Text("Check my posture with a photo") }
                     }
                 }
                 items(moves) { m ->

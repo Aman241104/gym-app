@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import app.gymapp.data.Repo
 import app.gymapp.ui.glass.GlassLook
+import app.gymapp.ui.posture.PostureScanScreen
 import app.gymapp.ui.posture.PostureScreen
 import app.gymapp.ui.run.ActiveRunScreen
 import app.gymapp.ui.run.RunScreen
@@ -80,7 +81,8 @@ private fun MainScaffold(dark: Boolean) {
             Glow()
             when (route) {
                 "log" -> LogScreen(onDone = close)
-                "posture" -> PostureScreen(onDone = close)
+                "posture" -> PostureScreen(onDone = close, onScan = { route = "scan" })
+                "scan" -> PostureScanScreen(onBack = { route = "posture" })
                 "running" -> ActiveRunScreen(onClose = close)
                 else -> when (tab) {
                     0 -> TodayScreen(onStart = startWorkout, onPosture = { route = "posture" }, onRun = { tab = 2 })

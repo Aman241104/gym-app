@@ -35,9 +35,11 @@ private val OUTBOX = stringPreferencesKey("outbox")
 private val POSTURE = stringPreferencesKey("posture_days")
 private val SWAPS = stringPreferencesKey("plan_swaps")
 private val RUNS = stringPreferencesKey("runs")
+private val SCANS = stringPreferencesKey("posture_scans")
 
 private val workoutList = ListSerializer(Workout.serializer())
 private val runList = ListSerializer(Run.serializer())
+private val scanList = ListSerializer(PostureScan.serializer())
 private val outboxList = ListSerializer(OutboxEntry.serializer())
 private val postureList = ListSerializer(String.serializer())
 private val swapMap = MapSerializer(String.serializer(), Int.serializer())
@@ -63,6 +65,8 @@ object Repo {
     // ponytail: exercise swaps are phone-only, like posture days.
     private val _swaps = MutableStateFlow<Map<String, Int>>(emptyMap())
     private val _library = MutableStateFlow<List<LibExercise>>(emptyList())
+    // Phone-only on purpose: body photos and their numbers never leave the device.
+    private val _scans = MutableStateFlow<List<PostureScan>>(emptyList())
 
     val workouts: StateFlow<List<Workout>> = _workouts
     val runs: StateFlow<List<Run>> = _runs
@@ -77,6 +81,7 @@ object Repo {
     val swaps: StateFlow<Map<String, Int>> = _swaps
     /** free-exercise-db, loaded once from assets. */
     val library: StateFlow<List<LibExercise>> = _library
+    val scans: StateFlow<List<PostureScan>> = _scans
 
     fun init(context: Context) {
         if (::appContext.isInitialized) return
@@ -90,6 +95,7 @@ object Repo {
             _outbox.value = prefs.read(OUTBOX, outboxList) ?: emptyList()
             _postureDays.value = prefs.read(POSTURE, postureList)?.toSet() ?: emptySet()
             _swaps.value = prefs.read(SWAPS, swapMap) ?: emptyMap()
+            _scans.value = prefs.read(SCANS, scanList) ?: emptyList()
             _library.value = parseLibrary(appContext.assets.open("exercises.json").bufferedReader().use { it.readText() })
             if (_settings.value.planStart == null) {
                 updateSettings { it.copy(planStart = LocalDate.now().with(DayOfWeek.MONDAY).toString()) }
@@ -148,6 +154,11 @@ object Repo {
 
     fun swap(slotKey: String) = scope.launch {
         _swaps.update { it + (slotKey to (it[slotKey] ?: 0) + 1) }
+        persist()
+    }
+
+    fun addScan(scan: PostureScan) = scope.launch {
+        _scans.update { listOf(scan) + it }
         persist()
     }
 
@@ -211,6 +222,7 @@ object Repo {
             it[OUTBOX] = json.encodeToString(outboxList, _outbox.value)
             it[POSTURE] = json.encodeToString(postureList, _postureDays.value.toList())
             it[SWAPS] = json.encodeToString(swapMap, _swaps.value)
+            it[SCANS] = json.encodeToString(scanList, _scans.value)
         }
     }
 

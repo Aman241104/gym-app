@@ -1,2 +1,4 @@
 exercises.json: free-exercise-db by yuhonas, https://github.com/yuhonas/free-exercise-db
 Released into the public domain (Unlicense). Images are loaded from the same repository.
+pose_landmarker_lite.task: MediaPipe Pose Landmarker model by Google, Apache License 2.0
+https://developers.google.com/mediapipe/solutions/vision/pose_landmarker
