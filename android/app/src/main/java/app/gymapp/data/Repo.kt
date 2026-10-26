@@ -46,7 +46,7 @@ private val MIND = stringPreferencesKey("mind_minutes")
 private val ITEMS = stringPreferencesKey("items")
 
 /** Modules stored as generic synced items (see /api/items). */
-val ItemModules = listOf("read", "skin")
+val ItemModules = listOf("read", "skin", "career", "style")
 
 private val workoutList = ListSerializer(Workout.serializer())
 private val runList = ListSerializer(Run.serializer())

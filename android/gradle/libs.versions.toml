@@ -16,6 +16,7 @@ coil = "3.3.0"
 mediapipe = "1.1.1"
 codeScanner = "16.1.0"
 camerax = "1.6.2"
+subjectSegmentation = "16.0.0-beta1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core" }
@@ -38,6 +39,7 @@ code-scanner = { group = "com.google.android.gms", name = "play-services-code-sc
 camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
 camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
 camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+subject-segmentation = { group = "com.google.android.gms", name = "play-services-mlkit-subject-segmentation", version.ref = "subjectSegmentation" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]

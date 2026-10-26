@@ -53,3 +53,17 @@ class SkinTest {
         org.junit.Assert.assertFalse(SkinProduct("New", "Other", openedOn = "2026-10-01", paoMonths = 6).expired(today))
     }
 }
+
+class StyleTest {
+    @org.junit.Test fun coloursAndHarmony() {
+        org.junit.Assert.assertEquals("Navy", colourName(0x202B48))
+        org.junit.Assert.assertEquals("White", colourName(0xFAFAFA))
+        val navy = Garment("Bottom", "Navy", 0x1F2A4A, "a.png")
+        val white = Garment("Top", "White", 0xF4F4F2, "b.png")
+        val red = Garment("Top", "Red", 0xC0312B, "c.png")
+        val green = Garment("Bottom", "Green", 0x2E7D4F, "d.png")
+        org.junit.Assert.assertTrue(harmonyHint(listOf(white, navy)).startsWith("All neutrals"))
+        org.junit.Assert.assertTrue(harmonyHint(listOf(red, navy)).startsWith("One colour"))
+        org.junit.Assert.assertTrue(harmonyHint(listOf(red, green)).contains("compete"))
+    }
+}

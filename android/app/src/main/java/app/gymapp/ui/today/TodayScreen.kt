@@ -63,6 +63,12 @@ import app.gymapp.data.json
 import app.gymapp.domain.Book
 import app.gymapp.domain.SkinDay
 import app.gymapp.domain.pagesOn
+import app.gymapp.domain.CareerDay
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.rounded.Checkroom
+import androidx.compose.material.icons.rounded.WorkOutline
 import app.gymapp.domain.runDays
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import java.time.Instant
@@ -75,7 +81,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 @Composable
-fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, onEat: () -> Unit, onBreathe: () -> Unit, onRead: () -> Unit, onSkin: () -> Unit) {
+fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, onEat: () -> Unit, onBreathe: () -> Unit, onRead: () -> Unit, onSkin: () -> Unit, onModule: (String) -> Unit) {
     val items by Repo.items.collectAsState()
     val mind by Repo.mind.collectAsState()
     val food by Repo.food.collectAsState()
@@ -211,10 +217,19 @@ fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, o
             val books = items["read"].orEmpty().mapNotNull { runCatching { json.decodeFromJsonElement(Book.serializer(), it.data) }.getOrNull() }
             val skinLog = items["skin"].orEmpty().find { it.clientId == "log-$today" }?.let { runCatching { json.decodeFromJsonElement(SkinDay.serializer(), it.data) }.getOrNull() }
             Text("LIFE", style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.4.sp), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.height(IntrinsicSize.Min).padding(top = 8.dp)) {
-                Tile("Mind", "${mind[today.toString()] ?: 0}", "min breathed", Icons.Rounded.Air, Accent.Mind.color, onBreathe, Modifier.weight(1f).fillMaxHeight())
-                Tile("Read", "${pagesOn(books, today)}", "pages today", Icons.AutoMirrored.Rounded.MenuBook, Accent.Read.color, onRead, Modifier.weight(1f).fillMaxHeight())
-                Tile("Skin", "${(skinLog?.am?.size ?: 0) + (skinLog?.pm?.size ?: 0)}", "steps done", Icons.Rounded.Spa, Accent.Skin.color, onSkin, Modifier.weight(1f).fillMaxHeight())
+            // Scrolls sideways so more modules fit without shrinking the tiles.
+            val career = items["career"].orEmpty().find { it.clientId == "day-$today" }?.let { runCatching { json.decodeFromJsonElement(CareerDay.serializer(), it.data) }.getOrNull() }
+            val wardrobe = items["style"].orEmpty().count { it.clientId.startsWith("g-") }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.height(IntrinsicSize.Min).padding(top = 8.dp).horizontalScroll(rememberScrollState()),
+            ) {
+                val w = Modifier.width(150.dp).fillMaxHeight()
+                Tile("Mind", "${mind[today.toString()] ?: 0}", "min breathed", Icons.Rounded.Air, Accent.Mind.color, onBreathe, w)
+                Tile("Read", "${pagesOn(books, today)}", "pages today", Icons.AutoMirrored.Rounded.MenuBook, Accent.Read.color, onRead, w)
+                Tile("Skin", "${(skinLog?.am?.size ?: 0) + (skinLog?.pm?.size ?: 0)}", "steps done", Icons.Rounded.Spa, Accent.Skin.color, onSkin, w)
+                Tile("Career", "${career?.applied ?: 0}", "applied today", Icons.Rounded.WorkOutline, Accent.Career.color, { onModule("career") }, w)
+                Tile("Style", "$wardrobe", "pieces", Icons.Rounded.Checkroom, Accent.Style.color, { onModule("style") }, w)
             }
         }
         if (runDay) item {

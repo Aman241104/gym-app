@@ -97,7 +97,10 @@ as `OWNER_USER_ID` (see `lib/apiUser.ts`). Both env vars must be set on the serv
   clash + sunscreen reminders, open-life expiry), contextual glass dock (per-tab action button,
   session bar with rest timer + Finish), one-tap set ticks, PR confetti, post-run stretches, pace zones.
 - Backend: generic `items` table + /api/items for module documents (read, skin, career, style).
-- Still to build: live posing coach (CameraX + ghost outline), Career (link ../job-serach), Style
-  (wardrobe photos), AI layer (plan polish, photo review, plate photos: needs an API key), run map,
+- Also built: live posing coach (CameraX + MediaPipe, joint tips, auto-shutter, per-pose gallery),
+  Career v1 (daily applications/follow-ups/learning, skill log, opens Job Search OS), Style v1
+  (wardrobe photos with ML Kit background removal, colour naming, outfit builder + harmony hint).
+- Still to build: AI layer (plan polish, photo review, plate photos: needs an Anthropic API key),
+  Career <-> Job Search OS data link (needs token auth added to ../job-serach), run map,
   bodyweight progression chains, RIR logging. Web login needs a GitHub OAuth app for the Vercel URL.
 - Database moved to Neon on 2026-10-27 (Atlas cluster was gone). See `md/database.md`.
