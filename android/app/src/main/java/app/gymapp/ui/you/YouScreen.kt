@@ -31,6 +31,7 @@ import app.gymapp.data.Repo
 import app.gymapp.data.Server
 import app.gymapp.domain.EquipmentGroups
 import app.gymapp.domain.Goal
+import app.gymapp.ui.eat.SetupPanel
 import app.gymapp.ui.Muted
 import app.gymapp.ui.Panel
 import app.gymapp.ui.ScreenHeader
@@ -104,6 +105,7 @@ fun YouScreen() {
                 Muted("2-3 days: full body. 4: upper/lower. 5-6: push/pull/legs. Every 5th week is a lighter deload week.")
             }
         }
+        item { SetupPanel(settings.dietType, settings.bodyWeightKg) }
         item { SyncPanel() }
     }
 }

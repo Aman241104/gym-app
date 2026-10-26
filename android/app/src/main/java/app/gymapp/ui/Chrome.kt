@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.material.icons.rounded.WbSunny
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +40,7 @@ internal val tabs = listOf(
     "Today" to Icons.Rounded.WbSunny,
     "Train" to Icons.Rounded.FitnessCenter,
     "Run" to Icons.AutoMirrored.Rounded.DirectionsRun,
+    "Eat" to Icons.Rounded.Restaurant,
     "You" to Icons.Rounded.Person,
 )
 

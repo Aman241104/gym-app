@@ -2,3 +2,6 @@ exercises.json: free-exercise-db by yuhonas, https://github.com/yuhonas/free-exe
 Released into the public domain (Unlicense). Images are loaded from the same repository.
 pose_landmarker_lite.task: MediaPipe Pose Landmarker model by Google, Apache License 2.0
 https://developers.google.com/mediapipe/solutions/vision/pose_landmarker
+ifct.json: Indian Food Composition Tables 2017 (ICMR-NIN), packaged by Subhajit Sahu as
+@ifct2017/compositions 2.0.9, MIT License, https://github.com/nodef/ifct2017
+Cooked Indian food values in the Eat tab are approximate and written for this app.

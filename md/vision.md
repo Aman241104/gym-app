@@ -78,7 +78,17 @@ as `OWNER_USER_ID` (see `lib/apiUser.ts`). Both env vars must be set on the serv
 - Next.js 16 + Neon Postgres (Drizzle) + next-auth (GitHub, JWT) + Recharts. Workout logging, history, dashboard and an
   overload suggestion card.
 - See `implementation-plan.md` for the original phases (all done).
-- `android/`: glass dock (Today / Train / You), workout logging with overload prefill, rest timer,
-  history with edit/delete, guided 10-min posture routine (equipment-aware, posture streak),
-  equipment checklist, units, offline sync. Build: `cd android && ./gradlew assembleDebug`.
+- `android/` (Kotlin + Compose, tabs Today / Train / Run / Eat / You):
+  - Train: logging with rest timer and overload prefill, edit/delete history, free-exercise-db library
+    (876 exercises, how-to sheet), rules-first weekly planner (equipment + days + goal, rear-delt slot,
+    deloads, swaps).
+  - Posture: guided 10-min routine with voice cues; on-device MediaPipe posture scan (side: head-forward
+    and lean angles; front: shoulder/hip tilt), photos never leave the phone.
+  - Run: Couch-to-5K (27 sessions) on non-lifting days; GPS run screen as a location foreground service.
+  - Eat: food log in Indian units (own approximate cooked-food list + IFCT 2017 raw foods, MIT),
+    diet type incl. Jain, protein target from weight + goal, protein-gap suggestions.
+  - Local-first with an outbox; syncs workouts, runs, food and settings to the API.
+  Build: `cd android && ./gradlew assembleDebug`.
+- Still to build: posing coach + progress gallery, body heat-map, barcode scan (Open Food Facts),
+  then the Mind / Career / Read / Skin / Style modules. Web login needs a GitHub OAuth app for the Vercel URL.
 - Database moved to Neon on 2026-10-27 (Atlas cluster was gone). See `md/database.md`.

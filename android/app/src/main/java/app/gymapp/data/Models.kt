@@ -32,6 +32,9 @@ data class Settings(
     val goal: String = "Muscle",
     /** Monday the plan started (yyyy-mm-dd); week numbers and deloads count from here. */
     val planStart: String? = null,
+    val bodyWeightKg: Double? = null,
+    /** "veg", "egg", "nonveg" or "jain"; null until chosen. */
+    val dietType: String? = null,
 )
 
 /** A finished (or stopped early) run. [plan] is the Couch-to-5K code like "W1D2", null for a free run. */
@@ -44,6 +47,19 @@ data class Run(
     val durationSec: Int,
     val distanceM: Int,
     val completed: Boolean,
+)
+
+/** One logged food, nutrients already multiplied by [servings]. [day] is the local date. */
+@Serializable
+data class FoodEntry(
+    val clientId: String,
+    val day: String,
+    val name: String,
+    val servings: Double,
+    val kcal: Double,
+    val protein: Double,
+    val carbs: Double,
+    val fat: Double,
 )
 
 /** One posture photo check. Photos stay in app storage on the phone; only these numbers are kept. */
@@ -64,7 +80,7 @@ data class Server(val url: String = "", val token: String = "") {
     val configured: Boolean get() = url.isNotBlank() && token.isNotBlank()
 }
 
-/** kind: "workout" / "run" (POST, upserts by clientId), "update" (PUT serverId), "delete" (DELETE serverId), "settings". */
+/** kind: "workout" / "run" / "food" (POST, upserts by clientId), "food_delete" (DELETE by clientId), "update" (PUT serverId), "delete" (DELETE serverId), "settings". */
 @Serializable
 data class OutboxEntry(val kind: String, val clientId: String? = null, val serverId: String? = null)
 

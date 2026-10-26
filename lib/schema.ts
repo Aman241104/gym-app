@@ -1,4 +1,4 @@
-import { boolean, date, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, date, index, integer, jsonb, real, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export type SetEntry = { reps: number; weight: number };
 export type Exercise = { name: string; sets: SetEntry[] };
@@ -32,6 +32,9 @@ export const userSettings = pgTable("user_settings", {
   daysPerWeek: integer("days_per_week").notNull().default(3),
   goal: text("goal", { enum: ["Strength", "Muscle", "FatLoss", "General"] }).notNull().default("Muscle"),
   planStart: date("plan_start"),
+  // Nutrition: body weight drives the protein target; diet type filters food suggestions.
+  bodyWeightKg: real("body_weight_kg"),
+  dietType: text("diet_type", { enum: ["veg", "egg", "nonveg", "jain"] }),
 });
 
 // Runs logged by the Android run screen. `plan` is the Couch-to-5K step ("W1D2"), null for free runs.
@@ -47,4 +50,22 @@ export const runs = pgTable("runs", {
 }, (t) => [
   index("runs_user_date_idx").on(t.userId, t.date),
   uniqueIndex("runs_user_client_idx").on(t.userId, t.clientId),
+]);
+
+// One logged food. Nutrients are stored as eaten (servings already applied), so the server
+// needs no food database. `day` is the phone's local date.
+export const foodLogs = pgTable("food_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  clientId: text("client_id").notNull(),
+  day: date("day").notNull(),
+  name: text("name").notNull(),
+  servings: real("servings").notNull(),
+  kcal: real("kcal").notNull(),
+  protein: real("protein").notNull(),
+  carbs: real("carbs").notNull(),
+  fat: real("fat").notNull(),
+}, (t) => [
+  index("food_logs_user_day_idx").on(t.userId, t.day),
+  uniqueIndex("food_logs_user_client_idx").on(t.userId, t.clientId),
 ]);

@@ -33,6 +33,9 @@ import app.gymapp.ui.rememberWeekPlan
 import app.gymapp.ui.train.Draft
 import app.gymapp.domain.lastByExercise
 import app.gymapp.domain.nextRun
+import app.gymapp.domain.goalOf
+import app.gymapp.domain.proteinTarget
+import androidx.compose.material.icons.rounded.Restaurant
 import app.gymapp.domain.runDays
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import java.time.Instant
@@ -45,7 +48,8 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 @Composable
-fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit) {
+fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, onEat: () -> Unit) {
+    val food by Repo.food.collectAsState()
     val runs by Repo.runs.collectAsState()
     val postureDays by Repo.postureDays.collectAsState()
     val planState = rememberWeekPlan()
@@ -138,6 +142,19 @@ fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit) {
                             contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp),
                         )
                     }
+                }
+            }
+        }
+        item {
+            val protein = food.filter { it.day == today.toString() }.sumOf { it.protein }
+            val target = settings.bodyWeightKg?.let { proteinTarget(it, goalOf(settings.goal)) }
+            Panel(Modifier.clickable(onClick = onEat)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Protein · %.0f%s g".format(protein, target?.let { " / $it" }.orEmpty()), style = MaterialTheme.typography.titleLarge)
+                        Muted(if (target == null) "Add your weight on the Eat tab to get a daily target." else if (protein >= target) "Target hit today." else "Log meals in katori and roti on the Eat tab.")
+                    }
+                    Icon(Icons.Rounded.Restaurant, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
                 }
             }
         }
