@@ -35,6 +35,8 @@ import app.gymapp.ui.rememberWeekPlan
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.foundation.layout.size
 import java.time.format.TextStyle
 import java.util.Locale
 import androidx.compose.material3.Icon
@@ -59,7 +61,7 @@ import java.time.format.DateTimeFormatter
 private val dayFormat = DateTimeFormatter.ofPattern("EEE d MMM")
 
 @Composable
-fun TrainScreen(onStart: () -> Unit) {
+fun TrainScreen(onStart: () -> Unit, onPose: () -> Unit = {}) {
     var confirmDelete by remember { mutableStateOf<Workout?>(null) }
     var detail by remember { mutableStateOf<LibExercise?>(null) }
     val planState = rememberWeekPlan()
@@ -75,6 +77,17 @@ fun TrainScreen(onStart: () -> Unit) {
             Button(onClick = onStart, colors = ButtonDefaults.buttonColors(containerColor = Accent.Train.color), modifier = Modifier.fillMaxWidth().height(56.dp).rise()) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null)
                 Text(if (Draft.exercises.isEmpty()) "  Start workout" else "  Resume workout", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+        item {
+            Panel(accent = Accent.Train.color, onClick = onPose) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Posing coach", style = MaterialTheme.typography.titleLarge)
+                        Muted("Live camera, joint-by-joint tips, auto photo at 90+. Stays on your phone.")
+                    }
+                    Icon(Icons.Rounded.CameraAlt, contentDescription = null, tint = Accent.Train.color, modifier = Modifier.size(32.dp))
+                }
             }
         }
         planState?.let { (plan, week) ->

@@ -28,6 +28,7 @@ import app.gymapp.ui.eat.EatScreen
 import app.gymapp.ui.mind.BreatheScreen
 import app.gymapp.ui.read.ReadScreen
 import app.gymapp.ui.skin.SkinScreen
+import app.gymapp.ui.pose.PoseCoachScreen
 import app.gymapp.ui.design.Aurora
 import app.gymapp.ui.design.Confetti
 import androidx.compose.ui.unit.dp
@@ -134,9 +135,10 @@ private fun MainScaffold(dark: Boolean) {
                 "breathe" -> BreatheScreen(onClose = close)
                 "read" -> ReadScreen(onClose = close)
                 "skin" -> SkinScreen(onClose = close)
+                "pose" -> PoseCoachScreen(onClose = close)
                 else -> when (tab) {
                     0 -> TodayScreen(onStart = startWorkout, onPosture = { route = "posture" }, onRun = { tab = 2 }, onEat = { tab = 3 }, onBreathe = { route = "breathe" }, onRead = { route = "read" }, onSkin = { route = "skin" })
-                    1 -> TrainScreen(onStart = startWorkout)
+                    1 -> TrainScreen(onStart = startWorkout, onPose = { route = "pose" })
                     2 -> RunScreen(onOpenRun = { route = "running" }, startSignal = runSignal, onStartHandled = { runSignal = 0 })
                     3 -> EatScreen(scanSignal = scanSignal, onScanHandled = { scanSignal = 0 })
                     else -> YouScreen()

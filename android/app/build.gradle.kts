@@ -59,6 +59,10 @@ dependencies {
     implementation(libs.mediapipe.vision)
     // Google's barcode scanner UI (no camera permission needed) for packaged food.
     implementation(libs.code.scanner)
+    // Live camera for the posing coach.
+    implementation(libs.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.camera.view)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)
