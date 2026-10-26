@@ -20,6 +20,8 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import app.gymapp.domain.Food
 import app.gymapp.domain.IndianFoods
 import app.gymapp.domain.LibExercise
@@ -41,11 +43,17 @@ private val RUNS = stringPreferencesKey("runs")
 private val SCANS = stringPreferencesKey("posture_scans")
 private val FOOD = stringPreferencesKey("food")
 private val MIND = stringPreferencesKey("mind_minutes")
+private val ITEMS = stringPreferencesKey("items")
+
+/** Modules stored as generic synced items (see /api/items). */
+val ItemModules = listOf("read", "skin")
 
 private val workoutList = ListSerializer(Workout.serializer())
 private val runList = ListSerializer(Run.serializer())
 private val scanList = ListSerializer(PostureScan.serializer())
 private val foodList = ListSerializer(FoodEntry.serializer())
+private val itemList = ListSerializer(Item.serializer())
+private val itemMap = MapSerializer(String.serializer(), itemList)
 private val outboxList = ListSerializer(OutboxEntry.serializer())
 private val postureList = ListSerializer(String.serializer())
 private val swapMap = MapSerializer(String.serializer(), Int.serializer())
@@ -62,6 +70,7 @@ object Repo {
     private val _workouts = MutableStateFlow<List<Workout>>(emptyList())
     private val _runs = MutableStateFlow<List<Run>>(emptyList())
     private val _food = MutableStateFlow<List<FoodEntry>>(emptyList())
+    private val _items = MutableStateFlow<Map<String, List<Item>>>(emptyMap())
     private val _foods = MutableStateFlow<List<Food>>(IndianFoods)
     private val _settings = MutableStateFlow(Settings())
     private val _server = MutableStateFlow(Server())
@@ -81,6 +90,8 @@ object Repo {
     val workouts: StateFlow<List<Workout>> = _workouts
     val runs: StateFlow<List<Run>> = _runs
     val food: StateFlow<List<FoodEntry>> = _food
+    /** Module documents by module name ("read", "skin"). */
+    val items: StateFlow<Map<String, List<Item>>> = _items
     /** Searchable foods: the cooked Indian list, then IFCT raw foods once loaded. */
     val foods: StateFlow<List<Food>> = _foods
     val settings: StateFlow<Settings> = _settings
@@ -106,6 +117,7 @@ object Repo {
             _workouts.value = prefs.read(WORKOUTS, workoutList) ?: emptyList()
             _runs.value = prefs.read(RUNS, runList) ?: emptyList()
             _food.value = prefs.read(FOOD, foodList) ?: emptyList()
+            _items.value = prefs.read(ITEMS, itemMap) ?: emptyMap()
             _settings.value = prefs.read(SETTINGS, Settings.serializer()) ?: Settings()
             _server.value = prefs.read(SERVER, Server.serializer()) ?: Server()
             _outbox.value = prefs.read(OUTBOX, outboxList) ?: emptyList()
@@ -143,6 +155,21 @@ object Repo {
     fun addFood(entry: FoodEntry) = scope.launch {
         _food.update { listOf(entry) + it }
         _outbox.update { it + OutboxEntry("food", entry.clientId) }
+        persist()
+        sync()
+    }
+
+    fun putItem(module: String, item: Item) = scope.launch {
+        _items.update { all -> all + (module to (listOf(item) + all[module].orEmpty().filterNot { it.clientId == item.clientId })) }
+        val entry = OutboxEntry("item", item.clientId, module = module)
+        _outbox.update { box -> if (entry in box) box else box + entry }
+        persist()
+        sync()
+    }
+
+    fun deleteItem(module: String, clientId: String) = scope.launch {
+        _items.update { all -> all + (module to all[module].orEmpty().filterNot { it.clientId == clientId }) }
+        _outbox.update { box -> box.filterNot { it.module == module && it.clientId == clientId } + OutboxEntry("item_delete", clientId, module = module) }
         persist()
         sync()
     }
@@ -231,6 +258,11 @@ object Repo {
                         Api.call(server, "POST", "/api/food", JsonObject.serializer(), json.encodeToString(FoodEntry.serializer(), it))
                     }
                     "food_delete" -> Api.call(server, "DELETE", "/api/food?clientId=${entry.clientId}", JsonObject.serializer())
+                    "item" -> _items.value[entry.module].orEmpty().find { it.clientId == entry.clientId }?.let {
+                        val body = buildJsonObject { put("module", entry.module); put("clientId", it.clientId); put("data", it.data) }
+                        Api.call(server, "POST", "/api/items", JsonObject.serializer(), body.toString())
+                    }
+                    "item_delete" -> Api.call(server, "DELETE", "/api/items?module=${entry.module}&clientId=${entry.clientId}", JsonObject.serializer())
                     "settings" -> Api.call(server, "POST", "/api/settings", Settings.serializer(), json.encodeToString(Settings.serializer(), _settings.value))
                 }
                 _outbox.update { it - entry }
@@ -240,6 +272,7 @@ object Repo {
             val remoteSettings = Api.call(server, "GET", "/api/settings", Settings.serializer())
             val remoteRuns = Api.call(server, "GET", "/api/runs", runList)
             val remoteFood = Api.call(server, "GET", "/api/food", foodList)
+            val remoteItems = ItemModules.associateWith { Api.call(server, "GET", "/api/items?module=$it", itemList) }
             // Anything saved while this sync ran is still queued: keep it rather than let the pull erase it.
             val pending = _outbox.value
             _workouts.update { local -> merge(local, remote, pending) }
@@ -247,6 +280,15 @@ object Repo {
                 val queued = pending.filter { it.kind == "food" }.mapNotNull { it.clientId }.toSet()
                 val deleted = pending.filter { it.kind == "food_delete" }.mapNotNull { it.clientId }.toSet()
                 local.filter { it.clientId in queued && remoteFood.none { r -> r.clientId == it.clientId } } + remoteFood.filterNot { it.clientId in deleted }
+            }
+            _items.update { local ->
+                ItemModules.associateWith { m ->
+                    val queued = pending.filter { it.kind == "item" && it.module == m }.mapNotNull { it.clientId }.toSet()
+                    val deleted = pending.filter { it.kind == "item_delete" && it.module == m }.mapNotNull { it.clientId }.toSet()
+                    val remote = remoteItems[m].orEmpty()
+                    // Local edits still queued win over the server copy.
+                    local[m].orEmpty().filter { it.clientId in queued } + remote.filterNot { it.clientId in deleted || it.clientId in queued }
+                }
             }
             _runs.update { local ->
                 val queued = pending.filter { it.kind == "run" }.mapNotNull { it.clientId }.toSet()
@@ -267,6 +309,7 @@ object Repo {
             it[WORKOUTS] = json.encodeToString(workoutList, _workouts.value)
             it[RUNS] = json.encodeToString(runList, _runs.value)
             it[FOOD] = json.encodeToString(foodList, _food.value)
+            it[ITEMS] = json.encodeToString(itemMap, _items.value)
             it[SETTINGS] = json.encodeToString(Settings.serializer(), _settings.value)
             it[SERVER] = json.encodeToString(Server.serializer(), _server.value)
             it[OUTBOX] = json.encodeToString(outboxList, _outbox.value)

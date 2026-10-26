@@ -92,8 +92,12 @@ as `OWNER_USER_ID` (see `lib/apiUser.ts`). Both env vars must be set on the serv
 - Design system (`android/.../ui/design`): per-module accents (Train pink, Run peach, Eat sage,
   Posture lavender, Mind sky), Instrument Serif italic phrase in headers, animated rings, count-ups,
   rise-in cards with spring press + haptics, drifting aurora. Today = 4 daily rings + week strip.
-- Also built: 7-day muscle balance, posture then/now photos, barcode scan (Open Food Facts),
-  Mind module v1 (box / 4-7-8 / coherent breathing).
-- Still to build: live posing coach (CameraX + ghost outline), then Career / Read / Skin / Style.
-  Web login needs a GitHub OAuth app for the Vercel URL.
+- Also built: 7-day muscle balance, posture then/now photos + trend, barcode scan (Open Food Facts),
+  Mind (breathing), Read (Open Library shelf, pages/day, highlights), Skin (AM/PM routine, shelf,
+  clash + sunscreen reminders, open-life expiry), contextual glass dock (per-tab action button,
+  session bar with rest timer + Finish), one-tap set ticks, PR confetti, post-run stretches, pace zones.
+- Backend: generic `items` table + /api/items for module documents (read, skin, career, style).
+- Still to build: live posing coach (CameraX + ghost outline), Career (link ../job-serach), Style
+  (wardrobe photos), AI layer (plan polish, photo review, plate photos: needs an API key), run map,
+  bodyweight progression chains, RIR logging. Web login needs a GitHub OAuth app for the Vercel URL.
 - Database moved to Neon on 2026-10-27 (Atlas cluster was gone). See `md/database.md`.

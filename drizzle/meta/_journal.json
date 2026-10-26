@@ -29,6 +29,13 @@
       "when": 1793043608051,
       "tag": "0003_careful_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793046051677,
+      "tag": "0004_gray_devos",
+      "breakpoints": true
     }
   ]
 }

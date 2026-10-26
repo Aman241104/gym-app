@@ -57,6 +57,12 @@ import app.gymapp.domain.goalOf
 import app.gymapp.domain.proteinTarget
 import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.material.icons.rounded.Air
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Spa
+import app.gymapp.data.json
+import app.gymapp.domain.Book
+import app.gymapp.domain.SkinDay
+import app.gymapp.domain.pagesOn
 import app.gymapp.domain.runDays
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import java.time.Instant
@@ -69,7 +75,8 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 @Composable
-fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, onEat: () -> Unit, onBreathe: () -> Unit) {
+fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, onEat: () -> Unit, onBreathe: () -> Unit, onRead: () -> Unit, onSkin: () -> Unit) {
+    val items by Repo.items.collectAsState()
     val mind by Repo.mind.collectAsState()
     val food by Repo.food.collectAsState()
     val runs by Repo.runs.collectAsState()
@@ -197,16 +204,14 @@ fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, o
             }
         }
         item {
-            val mins = mind[today.toString()] ?: 0
-            Panel(accent = Accent.Mind.color, onClick = onBreathe) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("MIND", style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.4.sp), color = Accent.Mind.color)
-                        Text(if (mins > 0) "$mins min breathed today" else "Two minutes to breathe", style = MaterialTheme.typography.titleLarge)
-                        Muted("Box, 4-7-8 or coherent breathing, guided by a gentle circle.")
-                    }
-                    Icon(Icons.Rounded.Air, contentDescription = null, tint = Accent.Mind.color, modifier = Modifier.size(34.dp))
-                }
+            // Life modules: one small tile each, today's number up front.
+            val books = items["read"].orEmpty().mapNotNull { runCatching { json.decodeFromJsonElement(Book.serializer(), it.data) }.getOrNull() }
+            val skinLog = items["skin"].orEmpty().find { it.clientId == "log-$today" }?.let { runCatching { json.decodeFromJsonElement(SkinDay.serializer(), it.data) }.getOrNull() }
+            Text("LIFE", style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.4.sp), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.height(IntrinsicSize.Min).padding(top = 8.dp)) {
+                Tile("Mind", "${mind[today.toString()] ?: 0}", "min breathed", Icons.Rounded.Air, Accent.Mind.color, onBreathe, Modifier.weight(1f).fillMaxHeight())
+                Tile("Read", "${pagesOn(books, today)}", "pages today", Icons.AutoMirrored.Rounded.MenuBook, Accent.Read.color, onRead, Modifier.weight(1f).fillMaxHeight())
+                Tile("Skin", "${(skinLog?.am?.size ?: 0) + (skinLog?.pm?.size ?: 0)}", "steps done", Icons.Rounded.Spa, Accent.Skin.color, onSkin, Modifier.weight(1f).fillMaxHeight())
             }
         }
         if (runDay) item {

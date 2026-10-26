@@ -69,3 +69,16 @@ export const foodLogs = pgTable("food_logs", {
   index("food_logs_user_day_idx").on(t.userId, t.day),
   uniqueIndex("food_logs_user_client_idx").on(t.userId, t.clientId),
 ]);
+
+// Generic per-module documents (Read books, Skin products, ...). Each module keeps its own
+// `module` key, so it can be split out later; `data` is the module's own JSON shape.
+export const items = pgTable("items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  module: text("module").notNull(),
+  clientId: text("client_id").notNull(),
+  data: jsonb("data").$type<Record<string, unknown>>().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("items_user_module_client_idx").on(t.userId, t.module, t.clientId),
+]);

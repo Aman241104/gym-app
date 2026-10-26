@@ -74,15 +74,19 @@ data class PostureScan(
     val photo: String,
 )
 
+/** A module document (a book, a skin product, ...); [data] is the module's own JSON shape. */
+@Serializable
+data class Item(val clientId: String, val data: kotlinx.serialization.json.JsonObject)
+
 /** Where the Next.js backend lives. Local only, never sent anywhere but that server. */
 @Serializable
 data class Server(val url: String = "", val token: String = "") {
     val configured: Boolean get() = url.isNotBlank() && token.isNotBlank()
 }
 
-/** kind: "workout" / "run" / "food" (POST, upserts by clientId), "food_delete" (DELETE by clientId), "update" (PUT serverId), "delete" (DELETE serverId), "settings". */
+/** kind: "workout" / "run" / "food" / "item" (POST, upserts by clientId), "food_delete" / "item_delete" (DELETE by clientId), "update" (PUT serverId), "delete" (DELETE serverId), "settings". */
 @Serializable
-data class OutboxEntry(val kind: String, val clientId: String? = null, val serverId: String? = null)
+data class OutboxEntry(val kind: String, val clientId: String? = null, val serverId: String? = null, val module: String? = null)
 
 @Serializable
 data class ApiResponse<T>(val success: Boolean, val data: T? = null, val error: String? = null)

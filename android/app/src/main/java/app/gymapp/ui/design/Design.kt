@@ -67,7 +67,9 @@ enum class Accent(private val light: Color, private val dark: Color) {
     Run(Color(0xFFB0561E), Color(0xFFF2BFA0)), // peach
     Eat(Color(0xFF3F6B2E), Color(0xFFBFDCA8)), // sage
     Posture(Color(0xFF5B55A8), Color(0xFFBDB6F7)), // lavender
-    Mind(Color(0xFF1F6C8A), Color(0xFFA9D8EC)); // sky
+    Mind(Color(0xFF1F6C8A), Color(0xFFA9D8EC)), // sky
+    Read(Color(0xFF8A5A00), Color(0xFFF3D27A)), // amber
+    Skin(Color(0xFFA8434F), Color(0xFFF7B2A8)); // coral
 
     val color: Color @Composable get() = if (isSystemInDarkTheme()) dark else light
 }
