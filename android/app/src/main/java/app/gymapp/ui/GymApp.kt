@@ -33,6 +33,8 @@ import app.gymapp.ui.career.CareerScreen
 import app.gymapp.ui.style.StyleScreen
 import app.gymapp.ui.design.Aurora
 import app.gymapp.ui.design.Confetti
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import app.gymapp.domain.formatWeight
 import androidx.compose.foundation.layout.padding
@@ -107,6 +109,8 @@ private fun MainScaffold(dark: Boolean) {
     val close = { route = null }
     // Dock button -> screen hand-offs for actions that live inside a screen (permissions, scanner).
     var runSignal by remember { mutableIntStateOf(0) }
+    // Kept here so returning from a pushed screen (Read, Skin, ...) lands where you left Today.
+    val todayList = androidx.compose.foundation.lazy.rememberLazyListState()
     var scanSignal by remember { mutableIntStateOf(0) }
     val planState = rememberWeekPlan()
     val workouts by Repo.workouts.collectAsState()
@@ -141,7 +145,7 @@ private fun MainScaffold(dark: Boolean) {
                 "career" -> CareerScreen(onClose = close)
                 "style" -> StyleScreen(onClose = close)
                 else -> when (tab) {
-                    0 -> TodayScreen(onStart = startWorkout, onPosture = { route = "posture" }, onRun = { tab = 2 }, onEat = { tab = 3 }, onBreathe = { route = "breathe" }, onRead = { route = "read" }, onSkin = { route = "skin" }, onModule = { route = it })
+                    0 -> TodayScreen(onStart = startWorkout, onPosture = { route = "posture" }, onRun = { tab = 2 }, onEat = { tab = 3 }, onBreathe = { route = "breathe" }, onRead = { route = "read" }, onSkin = { route = "skin" }, onModule = { route = it }, listState = todayList)
                     1 -> TrainScreen(onStart = startWorkout, onPose = { route = "pose" })
                     2 -> RunScreen(onOpenRun = { route = "running" }, startSignal = runSignal, onStartHandled = { runSignal = 0 })
                     3 -> EatScreen(scanSignal = scanSignal, onScanHandled = { scanSignal = 0 })
@@ -171,19 +175,24 @@ private fun MainScaffold(dark: Boolean) {
 @Composable
 private fun PrCelebration() {
     val context = LocalContext.current
+    val unit = Repo.settings.collectAsState().value.unit
     LaunchedEffect(Celebrate.records) {
         context.getSystemService(android.os.Vibrator::class.java)
             ?.vibrate(android.os.VibrationEffect.createWaveform(longArrayOf(0, 60, 80, 60, 80, 220), -1))
         kotlinx.coroutines.delay(4500)
         Celebrate.records = emptyList()
     }
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    // Dim scrim + an opaque card so the record reads cleanly over any screen.
+    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)), contentAlignment = Alignment.Center) {
         Confetti(listOf(Accent.Train.color, Accent.Run.color, Accent.Eat.color, Accent.Posture.color, Accent.Mind.color))
-        Panel(Modifier.padding(32.dp), accent = Accent.Train.color, onClick = { Celebrate.records = emptyList() }) {
-            Text("New personal record", style = MaterialTheme.typography.labelMedium, color = Accent.Train.color)
-            Celebrate.records.forEach { pr ->
-                Text("${pr.exercise}  ${formatWeight(pr.weight)}", style = MaterialTheme.typography.headlineSmall)
-                Muted("Previous best ${formatWeight(pr.previous)}")
+        Box(Modifier.padding(32.dp).background(MaterialTheme.colorScheme.surfaceContainerHigh, RoundedCornerShape(28.dp))) {
+            Panel(accent = Accent.Train.color, onClick = { Celebrate.records = emptyList() }) {
+                Text("NEW PERSONAL RECORD", style = MaterialTheme.typography.labelMedium, color = Accent.Train.color)
+                Celebrate.records.forEach { pr ->
+                    Text(pr.exercise, style = MaterialTheme.typography.titleLarge)
+                    Text("${formatWeight(pr.weight)} $unit", style = MaterialTheme.typography.displaySmall, color = Accent.Train.color)
+                    Muted("Previous best ${formatWeight(pr.previous)} $unit")
+                }
             }
         }
     }

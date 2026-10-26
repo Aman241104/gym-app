@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -81,7 +83,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 @Composable
-fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, onEat: () -> Unit, onBreathe: () -> Unit, onRead: () -> Unit, onSkin: () -> Unit, onModule: (String) -> Unit) {
+fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, onEat: () -> Unit, onBreathe: () -> Unit, onRead: () -> Unit, onSkin: () -> Unit, onModule: (String) -> Unit, listState: LazyListState = rememberLazyListState()) {
     val items by Repo.items.collectAsState()
     val mind by Repo.mind.collectAsState()
     val food by Repo.food.collectAsState()
@@ -121,7 +123,7 @@ fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, o
     )
     val closed = goals.count { it.progress >= 1f }
 
-    LazyColumn(contentPadding = ScreenPadding, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    LazyColumn(state = listState, contentPadding = ScreenPadding, verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item {
             val hour = LocalTime.now().hour
             ScreenHeader(today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")), "Good", if (hour < 12) "morning" else if (hour < 17) "afternoon" else "evening")
