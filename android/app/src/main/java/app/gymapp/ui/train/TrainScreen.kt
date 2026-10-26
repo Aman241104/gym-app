@@ -73,7 +73,8 @@ fun TrainScreen(onStart: () -> Unit) {
                     IconButton(onClick = { confirmDelete = w }) { Icon(Icons.Rounded.DeleteOutline, contentDescription = "Delete") }
                 }
                 Text(w.exercises.joinToString(" · ") { it.name }, style = MaterialTheme.typography.bodyLarge)
-                Muted("${w.exercises.sumOf { it.sets.size }} sets · ${formatWeight(w.volume())} ${settings.unit} volume")
+                val sets = w.exercises.sumOf { it.sets.size }
+                Muted("$sets ${if (sets == 1) "set" else "sets"} · ${formatWeight(w.volume())} ${settings.unit} volume")
             }
         }
     }
