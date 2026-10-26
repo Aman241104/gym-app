@@ -27,6 +27,7 @@ import app.gymapp.data.Repo
 import app.gymapp.ui.eat.EatScreen
 import app.gymapp.ui.mind.BreatheScreen
 import app.gymapp.ui.design.Aurora
+import app.gymapp.ui.design.StatusScrim
 import app.gymapp.ui.glass.GlassLook
 import app.gymapp.ui.posture.PostureScanScreen
 import app.gymapp.ui.posture.PostureScreen
@@ -97,6 +98,7 @@ private fun MainScaffold(dark: Boolean) {
                 }
             }
         }
+        StatusScrim(Modifier.align(Alignment.TopCenter))
         if (route == null) {
             BottomBar(
                 selected = { tab },

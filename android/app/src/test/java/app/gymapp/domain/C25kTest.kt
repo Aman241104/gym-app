@@ -28,4 +28,12 @@ class C25kTest {
         assertEquals(3, days.size)
         assertTrue(days.none { it in setOf(MONDAY, WEDNESDAY, FRIDAY) })
     }
+
+    @Test fun summariesCompressRepeats() {
+        assertEquals("8 × run 1m · walk 1m30s", C25k[0].summary)
+        assertEquals("2 × run 1m30s · walk 1m30s · run 3m · walk 3m", C25k.first { it.code == "W3D1" }.summary)
+        assertEquals("Run 20 min", C25k.first { it.code == "W5D3" }.summary)
+        assertEquals("2 × run 3m · walk 1m30s · run 5m · walk 2m30s", C25k.first { it.code == "W4D1" }.summary)
+        assertEquals("2 × run 8m · walk 5m", C25k.first { it.code == "W5D2" }.summary)
+    }
 }

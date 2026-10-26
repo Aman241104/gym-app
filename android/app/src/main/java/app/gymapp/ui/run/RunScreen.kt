@@ -6,6 +6,8 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -89,7 +91,7 @@ fun RunScreen(onOpenRun: () -> Unit) {
                         Icon(Icons.AutoMirrored.Rounded.DirectionsRun, contentDescription = null)
                         Text("  Start run", style = MaterialTheme.typography.titleMedium)
                     }
-                    TextButton(onClick = { begin(null) }) { Text("Free run (no intervals)") }
+                    TextButton(onClick = { begin(null) }, colors = ButtonDefaults.textButtonColors(contentColor = Accent.Run.color)) { Text("Free run (no intervals)") }
                 }
             }
         }
@@ -97,16 +99,23 @@ fun RunScreen(onOpenRun: () -> Unit) {
             Panel {
                 Text("Progress", style = MaterialTheme.typography.titleMedium)
                 Muted("Run days: " + runDays(liftDays).joinToString { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) } + " (away from lifting where possible)")
-                C25k.chunked(3).forEachIndexed { w, sessions ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Muted("Week ${w + 1}", Modifier.padding(end = 4.dp).fillMaxWidth(0.25f))
-                        sessions.forEach { s ->
-                            val color = when {
-                                s.code in done -> Accent.Run.color
-                                s.code == next.code -> Accent.Run.color.copy(alpha = 0.45f)
-                                else -> MaterialTheme.colorScheme.surfaceContainerHigh
+                // Nine week columns, three runs each: filled = done, ringed = next, faint = to come.
+                val run = Accent.Run.color
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    C25k.chunked(3).forEachIndexed { w, sessions ->
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            sessions.forEach { s ->
+                                Box(
+                                    Modifier.size(20.dp).clip(CircleShape).background(
+                                        when {
+                                            s.code in done -> run
+                                            s.code == next.code -> run.copy(alpha = 0.25f)
+                                            else -> run.copy(alpha = 0.10f)
+                                        },
+                                    ).then(if (s.code == next.code) Modifier.border(2.dp, run, CircleShape) else Modifier),
+                                )
                             }
-                            Box(Modifier.size(18.dp).clip(CircleShape).background(color))
+                            Muted("W${w + 1}")
                         }
                     }
                 }

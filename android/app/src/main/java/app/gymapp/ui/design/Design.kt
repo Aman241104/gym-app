@@ -18,7 +18,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -122,7 +129,7 @@ fun Rings(rings: List<RingSpec>, modifier: Modifier, stroke: Dp = 14.dp, gap: Dp
             val inset = w / 2 + i * (w + gap.toPx())
             val size = Size(this.size.width - inset * 2, this.size.height - inset * 2)
             val topLeft = Offset(inset, inset)
-            drawArc(r.color.copy(alpha = 0.16f), 0f, 360f, false, topLeft, size, style = Stroke(w))
+            drawArc(r.color.copy(alpha = 0.10f), 0f, 360f, false, topLeft, size, style = Stroke(w))
             val sweep = 360f * animated[i].coerceIn(0f, 1f)
             if (sweep > 0.5f) {
                 drawArc(
@@ -157,4 +164,16 @@ fun Aurora() {
         blob(lavender.copy(alpha = 0.14f), 0.95f + 0.06f * sin(phase), 0.45f + 0.06f * cos(phase), 0.8f)
         blob(peach.copy(alpha = 0.12f), 0.05f + 0.07f * cos(phase + 1f), 0.95f + 0.03f * sin(phase), 0.85f)
     }
+}
+
+/** Fades content out under the status bar so the clock never sits on top of a card. */
+@Composable
+fun StatusScrim(modifier: Modifier = Modifier) {
+    val bg = MaterialTheme.colorScheme.background
+    Box(
+        modifier
+            .fillMaxWidth()
+            .windowInsetsTopHeight(WindowInsets.statusBars.add(WindowInsets(top = 16.dp)))
+            .background(Brush.verticalGradient(listOf(bg, bg.copy(alpha = 0.8f), Color.Transparent))),
+    )
 }

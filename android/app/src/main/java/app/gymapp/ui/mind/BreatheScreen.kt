@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -116,7 +118,7 @@ fun BreatheScreen(onClose: () -> Unit) {
         item {
             Row(verticalAlignment = Alignment.Top) {
                 Box(Modifier.weight(1f)) { ScreenHeader("Mind", "Just", "breathe", sky) }
-                IconButton(onClick = onClose) { Icon(Icons.Rounded.Close, contentDescription = "Close") }
+                IconButton(onClick = onClose, modifier = Modifier.statusBarsPadding().padding(top = 20.dp)) { Icon(Icons.Rounded.Close, contentDescription = "Close") }
             }
         }
         item {
@@ -144,7 +146,8 @@ fun BreatheScreen(onClose: () -> Unit) {
             items(Patterns.size) { i ->
                 val it = Patterns[i]
                 Panel(accent = if (i == pattern) sky else null, onClick = { pattern = i; done = false; elapsed = 0 }) {
-                    Text(it.name + "  ·  " + it.steps.joinToString("-") { s -> if (s.second % 1 == 0f) "%.0f".format(s.second) else "%.1f".format(s.second) }, style = MaterialTheme.typography.titleMedium, color = if (i == pattern) sky else MaterialTheme.colorScheme.onSurface)
+                    val rhythm = it.steps.joinToString("-") { s -> if (s.second % 1 == 0f) "%.0f".format(s.second) else "%.1f".format(s.second) }
+                    Text(if (rhythm == it.name) it.name else "${it.name}  ·  $rhythm", style = MaterialTheme.typography.titleMedium, color = if (i == pattern) sky else MaterialTheme.colorScheme.onSurface)
                     Muted(it.why)
                 }
             }

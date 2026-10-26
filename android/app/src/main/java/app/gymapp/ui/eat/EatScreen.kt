@@ -21,6 +21,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -65,7 +68,7 @@ import java.util.UUID
 
 private val diets = listOf("veg" to "Veg", "egg" to "Eggetarian", "nonveg" to "Non-veg", "jain" to "Jain")
 
-private fun fmt(v: Double) = if (v >= 10) "%.0f".format(v) else "%.1f".format(v)
+private fun fmt(v: Double) = if (v >= 10 || v % 1.0 == 0.0) "%.0f".format(v) else "%.1f".format(v)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -123,7 +126,7 @@ fun EatScreen() {
                             adding = found
                         }
                     }
-                }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.QrCodeScanner, contentDescription = "Scan a barcode") }
+                }, colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = Accent.Eat.color.copy(alpha = 0.22f), contentColor = Accent.Eat.color), modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.QrCodeScanner, contentDescription = "Scan a barcode") }
             }
         }
         scanNote?.let { note -> item { Muted(note) } }
@@ -194,7 +197,10 @@ internal fun SetupPanel(dietType: String?, weight: Double?) {
         Muted("Your diet filters suggestions; your weight sets the daily protein target.")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             diets.forEach { (value, label) ->
-                FilterChip(selected = dietType == value, onClick = { Repo.updateSettings { it.copy(dietType = value) } }, label = { Text(label) })
+                FilterChip(
+                    selected = dietType == value, onClick = { Repo.updateSettings { it.copy(dietType = value) } }, label = { Text(label) },
+                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Accent.Eat.color.copy(alpha = 0.25f)),
+                )
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -203,7 +209,7 @@ internal fun SetupPanel(dietType: String?, weight: Double?) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f),
             )
             val parsed = kg.replace(',', '.').toDoubleOrNull()?.takeIf { it in 25.0..300.0 }
-            Button(onClick = { Repo.updateSettings { it.copy(bodyWeightKg = parsed) } }, enabled = parsed != null) { Text("Save") }
+            Button(onClick = { Repo.updateSettings { it.copy(bodyWeightKg = parsed) } }, enabled = parsed != null, colors = ButtonDefaults.buttonColors(containerColor = Accent.Eat.color)) { Text("Save") }
         }
     }
 }

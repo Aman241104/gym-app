@@ -10,6 +10,8 @@ val LotusDark = darkColorScheme(
     primary = Color(0xFFF5A9BE), onPrimary = Color(0xFF4A1426),
     primaryContainer = Color(0xFF6B2A3D), onPrimaryContainer = Color(0xFFFFD9E1),
     secondary = Color(0xFFF2BFA0), onSecondary = Color(0xFF45240F),
+    // Selected chips/segments: a muted rose instead of Material's default grey-violet.
+    secondaryContainer = Color(0xFF4A2A35), onSecondaryContainer = Color(0xFFFFD9E1),
     tertiary = Color(0xFFBDB6F7), onTertiary = Color(0xFF26215C),
     background = Color(0xFF0B090A), onBackground = Color(0xFFEDE3E5),
     surface = Color(0xFF0B090A), onSurface = Color(0xFFEDE3E5),

@@ -11,10 +11,20 @@ data class RunSession(val week: Int, val day: Int, val intervals: List<Interval>
     val code: String get() = "W${week}D$day"
     val totalSeconds: Int get() = intervals.sumOf { it.seconds }
     val runSeconds: Int get() = intervals.filter { it.phase == Phase.Run }.sumOf { it.seconds }
+    /** "8 × run 1m · walk 1m30s" for repeating blocks, otherwise the steps in order. */
     val summary: String get() {
         val block = intervals.filter { it.phase == Phase.Run || it.phase == Phase.Walk }
-        return if (block.size == 1) "Run ${block[0].seconds / 60} min" else block.joinToString(", ") { "${it.phase.label.lowercase()} ${fmt(it.seconds)}" }
-            .let { it.replaceFirstChar(Char::uppercase) }
+        if (block.size == 1) return "Run ${block[0].seconds / 60} min"
+        fun label(i: Interval) = "${i.phase.label.lowercase()} ${fmt(i.seconds)}"
+        for (k in 2..(block.size + 1) / 2) {
+            // The trailing walk of the last repeat was trimmed, so compare against block + that walk.
+            val unit = block.take(k)
+            val full = if (block.size % k == 0) block else block + unit.drop(block.size % k)
+            if (full.size % k == 0 && full.chunked(k).all { it == unit }) {
+                return "${full.size / k} × " + unit.joinToString(" · ") { label(it) }
+            }
+        }
+        return block.joinToString(" · ") { label(it) }.replaceFirstChar(Char::uppercase)
     }
 }
 
