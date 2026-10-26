@@ -18,6 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.remember
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,7 +46,10 @@ import app.gymapp.data.Exercise
 import app.gymapp.data.Repo
 import app.gymapp.data.SetEntry
 import app.gymapp.data.Workout
-import app.gymapp.domain.KnownExercises
+import app.gymapp.domain.LibExercise
+import app.gymapp.domain.PlanDay
+import app.gymapp.domain.doableWith
+import app.gymapp.ui.library.ExerciseSheet
 import app.gymapp.domain.formatWeight
 import app.gymapp.domain.lastByExercise
 import app.gymapp.domain.suggest
@@ -55,7 +61,8 @@ internal class SetDraft(reps: String, weight: String) {
     var weight by mutableStateOf(weight)
 }
 
-internal class ExerciseDraft(val name: String, sets: List<SetDraft>) {
+/** [target] is the plan's "3 × 8-10" when the exercise came from today's plan. */
+internal class ExerciseDraft(val name: String, sets: List<SetDraft>, val target: String? = null) {
     val sets = mutableStateListOf(*sets.toTypedArray())
 }
 
@@ -72,6 +79,17 @@ internal object Draft {
         clear()
         editing = workout
         workout.exercises.forEach { e -> exercises.add(ExerciseDraft(e.name, e.sets.map { SetDraft(it.reps.toString(), formatWeight(it.weight)) })) }
+    }
+
+    /** Starts a session from a planned day, prefilled from last time's overload hint where there is one. */
+    fun loadPlan(day: PlanDay, history: Map<String, Exercise>, unit: String) {
+        clear()
+        day.exercises.forEach { p ->
+            val hint = history[p.exercise.name.lowercase()]?.let { suggest(it, unit) }
+            val reps = hint?.reps?.toString() ?: p.reps.substringBefore('-')
+            val weight = hint?.let { formatWeight(it.weight) }.orEmpty()
+            exercises.add(ExerciseDraft(p.exercise.name, List(p.sets) { SetDraft(reps, weight) }, "${p.sets} × ${p.reps}"))
+        }
     }
 
     fun clear() {
@@ -94,6 +112,10 @@ fun LogScreen(onDone: () -> Unit) {
     val workouts by Repo.workouts.collectAsState()
     val settings by Repo.settings.collectAsState()
     val history = lastByExercise(workouts)
+    val library by Repo.library.collectAsState()
+    val kit = settings.equipment.toSet()
+    val byName = remember(library) { library.associateBy { it.name.lowercase() } }
+    var detail by remember { mutableStateOf<LibExercise?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
     val ready = Draft.toExercises().isNotEmpty()
 
@@ -122,7 +144,11 @@ fun LogScreen(onDone: () -> Unit) {
         }
         if (Draft.editing == null) item { RestTimer() }
         itemsIndexed(Draft.exercises, key = { _, e -> e.name }) { _, exercise ->
-            ExerciseCard(exercise, settings.unit, onRemove = { Draft.exercises.remove(exercise) })
+            ExerciseCard(
+                exercise, settings.unit,
+                onRemove = { Draft.exercises.remove(exercise) },
+                onInfo = byName[exercise.name.lowercase()]?.let { lib -> { detail = lib } },
+            )
         }
         item {
             OutlinedTextField(
@@ -136,10 +162,13 @@ fun LogScreen(onDone: () -> Unit) {
             )
         }
         item {
-            // Recent exercises first, then the catalog, filtered by what's typed.
-            val names = (history.values.map { it.name } + KnownExercises).distinctBy { it.lowercase() }
-                .filter { query.isBlank() || it.contains(query.trim(), ignoreCase = true) }
+            // Recent exercises first, then everything in the library your equipment allows.
+            val q = query.trim()
+            val doable = remember(library, kit) { library.filter { it.category != "stretching" && it.doableWith(kit) }.map { it.name } }
+            val names = (history.values.map { it.name } + doable).distinctBy { it.lowercase() }
+                .filter { q.isBlank() || it.contains(q, ignoreCase = true) }
                 .filterNot { n -> Draft.exercises.any { it.name.equals(n, ignoreCase = true) } }
+                .take(30)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(names) { name -> SuggestionChip(onClick = { add(name) }, label = { Text(name) }) }
             }
@@ -156,13 +185,18 @@ fun LogScreen(onDone: () -> Unit) {
             ) { Text(if (Draft.editing != null) "Save changes" else "Finish & save", style = MaterialTheme.typography.titleMedium) }
         }
     }
+    detail?.let { ExerciseSheet(it, onDismiss = { detail = null }) }
 }
 
 @Composable
-private fun ExerciseCard(exercise: ExerciseDraft, unit: String, onRemove: () -> Unit) {
+private fun ExerciseCard(exercise: ExerciseDraft, unit: String, onRemove: () -> Unit, onInfo: (() -> Unit)?) {
     Panel {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(exercise.name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            Column(Modifier.weight(1f)) {
+                Text(exercise.name, style = MaterialTheme.typography.titleLarge)
+                exercise.target?.let { Muted("Target $it") }
+            }
+            if (onInfo != null) IconButton(onClick = onInfo) { Icon(Icons.Rounded.Info, contentDescription = "How to do ${exercise.name}") }
             IconButton(onClick = onRemove) { Icon(Icons.Rounded.Close, contentDescription = "Remove ${exercise.name}") }
         }
         exercise.sets.forEachIndexed { i, set ->

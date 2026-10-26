@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     }
 
     const [settings] = await db.select().from(userSettings).where(eq(userSettings.userId, userId));
-    return NextResponse.json({ success: true, data: settings ?? { userId, unit: 'kg', equipment: [] } });
+    return NextResponse.json({ success: true, data: settings ?? { userId, unit: 'kg', equipment: [], daysPerWeek: 3, goal: 'Muscle', planStart: null } });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ success: false, error: message }, { status: 400 });
@@ -28,16 +28,27 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const unit = body.unit === undefined ? undefined : body.unit;
+    const unit = body.unit;
     const equipment = body.equipment === undefined ? undefined : parseStringList(body.equipment);
-    if ((unit !== undefined && unit !== 'kg' && unit !== 'lbs') || equipment === null) {
+    const daysPerWeek = body.daysPerWeek;
+    const goal = body.goal;
+    const planStart = body.planStart;
+    const valid =
+      (unit === undefined || unit === 'kg' || unit === 'lbs') &&
+      equipment !== null &&
+      (daysPerWeek === undefined || (Number.isInteger(daysPerWeek) && daysPerWeek >= 2 && daysPerWeek <= 6)) &&
+      (goal === undefined || ['Strength', 'Muscle', 'FatLoss', 'General'].includes(goal)) &&
+      (planStart === undefined || planStart === null || /^\d{4}-\d{2}-\d{2}$/.test(planStart));
+    if (!valid) {
       return NextResponse.json({ success: false, error: 'Invalid settings' }, { status: 400 });
     }
 
-    // Partial update: the web settings page only sends `unit`, the phone sends both.
-    const changes = { ...(unit && { unit }), ...(equipment && { equipment }) };
+    // Partial update: the web settings page only sends `unit`, the phone sends everything.
+    const changes = Object.fromEntries(
+      Object.entries({ unit, equipment, daysPerWeek, goal, planStart }).filter(([, v]) => v !== undefined)
+    );
     const [settings] = await db.insert(userSettings).values({ userId, ...changes })
-      .onConflictDoUpdate({ target: userSettings.userId, set: changes.unit || changes.equipment ? changes : { userId } })
+      .onConflictDoUpdate({ target: userSettings.userId, set: Object.keys(changes).length ? changes : { userId } })
       .returning();
     return NextResponse.json({ success: true, data: settings });
   } catch (error: unknown) {

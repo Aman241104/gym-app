@@ -28,6 +28,10 @@ data class Workout(
 data class Settings(
     val unit: String = "kg",
     val equipment: List<String> = emptyList(),
+    val daysPerWeek: Int = 3,
+    val goal: String = "Muscle",
+    /** Monday the plan started (yyyy-mm-dd); week numbers and deloads count from here. */
+    val planStart: String? = null,
 )
 
 /** Where the Next.js backend lives. Local only, never sent anywhere but that server. */

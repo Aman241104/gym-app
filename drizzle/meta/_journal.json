@@ -8,6 +8,13 @@
       "when": 1793040952074,
       "tag": "0000_graceful_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793041936758,
+      "tag": "0001_slim_red_shift",
+      "breakpoints": true
     }
   ]
 }

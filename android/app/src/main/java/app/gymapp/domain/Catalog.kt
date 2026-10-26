@@ -14,13 +14,3 @@ val EquipmentGroups: List<Pair<String, List<String>>> = listOf(
         "Ab wheel", "Stability ball", "Medicine ball", "Suspension trainer",
     ),
 )
-
-/** Names for quick-add while logging. Same list as the web app's utils/exerciseMap.ts until free-exercise-db lands. */
-val KnownExercises: List<String> = listOf(
-    "Bench Press", "Dumbbell Press", "Incline Press", "Flys", "Push Ups", "Dips",
-    "Deadlift", "Barbell Row", "Seated Row", "Lat Pulldown", "Pull Ups", "Chin Ups", "T-Bar Row", "Face Pull",
-    "Squat", "Leg Press", "Lunges", "Leg Extension", "Leg Curl", "Romanian Deadlift", "Calf Raise",
-    "Overhead Press", "Shoulder Press", "Lateral Raise", "Rear Delt Fly", "Shrugs",
-    "Bicep Curl", "Hammer Curl", "Tricep Pushdown", "Skull Crushers",
-    "Plank", "Crunches", "Leg Raise",
-)

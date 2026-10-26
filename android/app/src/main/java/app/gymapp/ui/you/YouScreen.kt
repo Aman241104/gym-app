@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import app.gymapp.data.Repo
 import app.gymapp.data.Server
 import app.gymapp.domain.EquipmentGroups
+import app.gymapp.domain.Goal
 import app.gymapp.ui.Muted
 import app.gymapp.ui.Panel
 import app.gymapp.ui.ScreenHeader
@@ -74,6 +75,33 @@ fun YouScreen() {
                         ) { Text(unit) }
                     }
                 }
+            }
+        }
+        item {
+            Panel {
+                Text("Plan", style = MaterialTheme.typography.titleLarge)
+                Muted("Days per week")
+                val dayOptions = (2..6).toList()
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    dayOptions.forEachIndexed { i, d ->
+                        SegmentedButton(
+                            selected = settings.daysPerWeek == d,
+                            onClick = { Repo.updateSettings { it.copy(daysPerWeek = d) } },
+                            shape = SegmentedButtonDefaults.itemShape(i, dayOptions.size),
+                        ) { Text("$d") }
+                    }
+                }
+                Muted("Goal")
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Goal.entries.forEach { g ->
+                        FilterChip(
+                            selected = settings.goal == g.name,
+                            onClick = { Repo.updateSettings { it.copy(goal = g.name) } },
+                            label = { Text(g.label) },
+                        )
+                    }
+                }
+                Muted("2-3 days: full body. 4: upper/lower. 5-6: push/pull/legs. Every 5th week is a lighter deload week.")
             }
         }
         item { SyncPanel() }

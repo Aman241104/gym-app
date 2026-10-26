@@ -1,4 +1,4 @@
-import { index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { date, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export type SetEntry = { reps: number; weight: number };
 export type Exercise = { name: string; sets: SetEntry[] };
@@ -28,4 +28,8 @@ export const userSettings = pgTable("user_settings", {
   userId: text("user_id").primaryKey(),
   unit: text("unit", { enum: ["kg", "lbs"] }).notNull().default("kg"),
   equipment: jsonb("equipment").$type<string[]>().notNull().default([]),
+  // Planner inputs (Android): training days per week, goal, and the plan's week-1 start (for deloads).
+  daysPerWeek: integer("days_per_week").notNull().default(3),
+  goal: text("goal", { enum: ["Strength", "Muscle", "FatLoss", "General"] }).notNull().default("Muscle"),
+  planStart: date("plan_start"),
 });

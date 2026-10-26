@@ -20,6 +20,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import app.gymapp.data.Workout
+import app.gymapp.domain.LibExercise
+import app.gymapp.ui.library.ExerciseSheet
+import app.gymapp.ui.rememberWeekPlan
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.rounded.SwapHoriz
+import java.time.format.TextStyle
+import java.util.Locale
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,6 +52,8 @@ private val dayFormat = DateTimeFormatter.ofPattern("EEE d MMM")
 @Composable
 fun TrainScreen(onStart: () -> Unit) {
     var confirmDelete by remember { mutableStateOf<Workout?>(null) }
+    var detail by remember { mutableStateOf<LibExercise?>(null) }
+    val planState = rememberWeekPlan()
     val workouts by Repo.workouts.collectAsState()
     val settings by Repo.settings.collectAsState()
     val outbox by Repo.outbox.collectAsState()
@@ -55,6 +65,36 @@ fun TrainScreen(onStart: () -> Unit) {
             Button(onClick = onStart, modifier = Modifier.fillMaxWidth().height(56.dp)) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null)
                 Text(if (Draft.exercises.isEmpty()) "  Start workout" else "  Resume workout", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+        planState?.let { (plan, week) ->
+            item {
+                Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("This week", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                    Muted("Week ${week + 1}" + if (plan.deload) " · deload" else "")
+                }
+            }
+            if (settings.equipment.isEmpty()) item { Muted("Tick your equipment on the You tab to get a plan that fits your gym.") }
+            items(plan.days, key = { "plan-${it.day}" }) { day ->
+                Panel {
+                    Text(
+                        "${day.day.getDisplayName(TextStyle.FULL, Locale.getDefault())} · ${day.title}",
+                        style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary,
+                    )
+                    day.exercises.forEach { p ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f).clickable { detail = p.exercise }) {
+                                Text(p.exercise.name, style = MaterialTheme.typography.bodyLarge)
+                                Muted("${p.slot.label} · ${p.sets} × ${p.reps}")
+                            }
+                            if (p.options > 1) {
+                                IconButton(onClick = { Repo.swap(p.slot.key) }) {
+                                    Icon(Icons.Rounded.SwapHoriz, contentDescription = "Swap ${p.exercise.name}")
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         item { Text("History", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 8.dp)) }
@@ -78,6 +118,7 @@ fun TrainScreen(onStart: () -> Unit) {
             }
         }
     }
+    detail?.let { ExerciseSheet(it, onDismiss = { detail = null }) }
     confirmDelete?.let { w ->
         AlertDialog(
             onDismissRequest = { confirmDelete = null },

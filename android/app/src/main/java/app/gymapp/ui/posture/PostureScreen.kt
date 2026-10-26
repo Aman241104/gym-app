@@ -1,6 +1,9 @@
 package app.gymapp.ui.posture
 
 import android.os.SystemClock
+import android.speech.tts.TextToSpeech
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.foundation.Canvas
@@ -76,7 +79,27 @@ fun PostureScreen(onDone: () -> Unit) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false }
     }
-    val vibrator = LocalContext.current.getSystemService(Vibrator::class.java)
+    val context = LocalContext.current
+    val vibrator = context.getSystemService(Vibrator::class.java)
+    // Spoken cues so the phone can sit on the floor during the routine.
+    var muted by rememberSaveable { mutableStateOf(false) }
+    val tts = remember { arrayOfNulls<TextToSpeech>(1) }
+    DisposableEffect(Unit) {
+        val engine = TextToSpeech(context) {}
+        tts[0] = engine
+        onDispose { engine.shutdown() }
+    }
+    fun say(text: String) {
+        if (!muted) tts[0]?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "cue")
+    }
+    LaunchedEffect(started, index, ready, finished) {
+        when {
+            !started -> Unit
+            finished -> say("Done. Shoulders back, chin tucked.")
+            ready -> say("Next: " + moves[index].name + (moves[index].side?.let { ", $it" } ?: ""))
+            else -> say("Go")
+        }
+    }
     fun buzz(ms: Long) = vibrator?.vibrate(VibrationEffect.createOneShot(ms, VibrationEffect.DEFAULT_AMPLITUDE))
 
     fun goTo(i: Int) {
@@ -119,6 +142,9 @@ fun PostureScreen(onDone: () -> Unit) {
                     if (started && !finished) "${index + 1} / ${moves.size}" else "Posture",
                     style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f),
                 )
+                if (started && !finished) IconButton(onClick = { muted = !muted }) {
+                    Icon(if (muted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp, contentDescription = if (muted) "Unmute voice" else "Mute voice")
+                }
                 IconButton(onClick = onDone) { Icon(Icons.Rounded.Close, contentDescription = "Close") }
             }
         }

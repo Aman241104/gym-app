@@ -29,6 +29,9 @@ import app.gymapp.domain.sessionsInLast7Days
 import app.gymapp.domain.streak
 import app.gymapp.domain.suggest
 import app.gymapp.ui.Muted
+import app.gymapp.ui.rememberWeekPlan
+import app.gymapp.ui.train.Draft
+import app.gymapp.domain.lastByExercise
 import app.gymapp.ui.Panel
 import app.gymapp.ui.ScreenHeader
 import app.gymapp.ui.ScreenPadding
@@ -39,6 +42,7 @@ import java.time.temporal.ChronoUnit
 @Composable
 fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit) {
     val postureDays by Repo.postureDays.collectAsState()
+    val planState = rememberWeekPlan()
     val workouts by Repo.workouts.collectAsState()
     val settings by Repo.settings.collectAsState()
     val today = LocalDate.now()
@@ -55,10 +59,47 @@ fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit) {
                 Stat("Last lift", daysSince?.let { if (it == 0L) "today" else "${it}d ago" } ?: "—", Modifier.weight(1f))
             }
         }
+        planState?.let { (plan, week) ->
+            val day = plan.on(today.dayOfWeek)
+            item {
+                Panel {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(day?.let { "${it.title} day" } ?: "Rest day", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                        Muted("Week ${week + 1}" + if (plan.deload) " · deload" else "")
+                    }
+                    if (day == null) {
+                        Muted("Recover: do the posture block and an easy 20-30 minute walk.")
+                    } else {
+                        if (plan.deload) Muted("Lighter week: one set less on everything so you recover.")
+                        day.exercises.forEach { p ->
+                            Row {
+                                Text(p.exercise.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                Muted("${p.sets} × ${p.reps}")
+                            }
+                        }
+                    }
+                }
+            }
+        }
         item {
-            Button(onClick = onStart, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            val day = planState?.first?.on(today.dayOfWeek)
+            val resuming = Draft.exercises.isNotEmpty()
+            Button(
+                onClick = {
+                    if (!resuming && day != null) Draft.loadPlan(day, lastByExercise(workouts), settings.unit)
+                    onStart()
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+            ) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null)
-                Text("  Start workout", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    when {
+                        resuming -> "  Resume session"
+                        day != null -> "  Start ${day.title.lowercase()} day"
+                        else -> "  Start a free workout"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
         }
         item {

@@ -45,6 +45,9 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
+    // Exercise pictures from free-exercise-db, cached on disk.
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)

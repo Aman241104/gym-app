@@ -17,8 +17,12 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonObject
+import app.gymapp.domain.LibExercise
+import app.gymapp.domain.parseLibrary
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -29,10 +33,12 @@ private val SETTINGS = stringPreferencesKey("settings")
 private val SERVER = stringPreferencesKey("server")
 private val OUTBOX = stringPreferencesKey("outbox")
 private val POSTURE = stringPreferencesKey("posture_days")
+private val SWAPS = stringPreferencesKey("plan_swaps")
 
 private val workoutList = ListSerializer(Workout.serializer())
 private val outboxList = ListSerializer(OutboxEntry.serializer())
 private val postureList = ListSerializer(String.serializer())
+private val swapMap = MapSerializer(String.serializer(), Int.serializer())
 
 /**
  * Local-first state: every write lands on the phone first (the gym has bad signal), then an
@@ -51,6 +57,9 @@ object Repo {
     private val _syncing = MutableStateFlow(false)
     // ponytail: posture history is phone-only; add a backend collection when the Today dashboard goes web too.
     private val _postureDays = MutableStateFlow<Set<String>>(emptySet())
+    // ponytail: exercise swaps are phone-only, like posture days.
+    private val _swaps = MutableStateFlow<Map<String, Int>>(emptyMap())
+    private val _library = MutableStateFlow<List<LibExercise>>(emptyList())
 
     val workouts: StateFlow<List<Workout>> = _workouts
     val settings: StateFlow<Settings> = _settings
@@ -60,6 +69,10 @@ object Repo {
     val syncing: StateFlow<Boolean> = _syncing
     /** ISO dates (yyyy-mm-dd) the posture routine was finished. */
     val postureDays: StateFlow<Set<String>> = _postureDays
+    /** Per planner slot, how many times "swap" was tapped. */
+    val swaps: StateFlow<Map<String, Int>> = _swaps
+    /** free-exercise-db, loaded once from assets. */
+    val library: StateFlow<List<LibExercise>> = _library
 
     fun init(context: Context) {
         if (::appContext.isInitialized) return
@@ -71,6 +84,11 @@ object Repo {
             _server.value = prefs.read(SERVER, Server.serializer()) ?: Server()
             _outbox.value = prefs.read(OUTBOX, outboxList) ?: emptyList()
             _postureDays.value = prefs.read(POSTURE, postureList)?.toSet() ?: emptySet()
+            _swaps.value = prefs.read(SWAPS, swapMap) ?: emptyMap()
+            _library.value = parseLibrary(appContext.assets.open("exercises.json").bufferedReader().use { it.readText() })
+            if (_settings.value.planStart == null) {
+                updateSettings { it.copy(planStart = LocalDate.now().with(DayOfWeek.MONDAY).toString()) }
+            }
             sync()
         }
     }
@@ -113,6 +131,11 @@ object Repo {
 
     fun logPosture() = scope.launch {
         _postureDays.update { it + LocalDate.now().toString() }
+        persist()
+    }
+
+    fun swap(slotKey: String) = scope.launch {
+        _swaps.update { it + (slotKey to (it[slotKey] ?: 0) + 1) }
         persist()
     }
 
@@ -166,6 +189,7 @@ object Repo {
             it[SERVER] = json.encodeToString(Server.serializer(), _server.value)
             it[OUTBOX] = json.encodeToString(outboxList, _outbox.value)
             it[POSTURE] = json.encodeToString(postureList, _postureDays.value.toList())
+            it[SWAPS] = json.encodeToString(swapMap, _swaps.value)
         }
     }
 
