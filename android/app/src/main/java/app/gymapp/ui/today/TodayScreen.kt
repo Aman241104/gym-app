@@ -51,7 +51,7 @@ fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val daysSince = last?.let { ChronoUnit.DAYS.between(it.localDate(), today) }
                 Stat("Streak", "${streak(workouts, today)}d", Modifier.weight(1f))
-                Stat("Last 7 days", "${sessionsInLast7Days(workouts, today)}", Modifier.weight(1f))
+                Stat("Past week", "${sessionsInLast7Days(workouts, today)}", Modifier.weight(1f))
                 Stat("Last lift", daysSince?.let { if (it == 0L) "today" else "${it}d ago" } ?: "—", Modifier.weight(1f))
             }
         }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -144,7 +145,7 @@ fun PostureScreen(onDone: () -> Unit) {
                     }
                 }
                 item {
-                    Button(onClick = { started = true }, modifier = Modifier.fillMaxWidth().height(56.dp).navigationBarsPadding()) {
+                    Button(onClick = { started = true }, modifier = Modifier.navigationBarsPadding().fillMaxWidth().height(56.dp)) {
                         Text("Start", style = MaterialTheme.typography.titleMedium)
                     }
                 }
@@ -170,7 +171,12 @@ fun PostureScreen(onDone: () -> Unit) {
                         if (ready) Muted("Next up")
                         Text(move.name, style = MaterialTheme.typography.headlineSmall)
                         move.side?.let { Text(it, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary) }
-                        move.cues.forEach { Text("•  $it", style = MaterialTheme.typography.bodyLarge) }
+                        move.cues.forEach {
+                            Row {
+                                Text("•", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.width(20.dp))
+                                Text(it, style = MaterialTheme.typography.bodyLarge)
+                            }
+                        }
                         Muted(move.why, Modifier.padding(top = 4.dp))
                     }
                     Row(Modifier.fillMaxWidth().navigationBarsPadding(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
