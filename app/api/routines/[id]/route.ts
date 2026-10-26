@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import Routine from '@/lib/models/Routine';
+import { and, eq } from 'drizzle-orm';
+import { db } from '@/lib/db';
+import { routines } from '@/lib/schema';
 import { getUserId } from "@/lib/apiUser";
+import { withMongoId } from '@/lib/validate';
+
+const own = (id: string, userId: string) => and(eq(routines.id, id), eq(routines.userId, userId));
 
 export async function GET(
   request: Request,
@@ -14,13 +18,12 @@ export async function GET(
     }
 
     const { id } = await params;
-    await dbConnect();
-    const routine = await Routine.findOne({ _id: id, userId: userId });
-    
+    const [routine] = await db.select().from(routines).where(own(id, userId));
+
     if (!routine) {
       return NextResponse.json({ success: false, error: 'Routine not found' }, { status: 404 });
     }
-    return NextResponse.json({ success: true, data: routine });
+    return NextResponse.json({ success: true, data: withMongoId(routine) });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ success: false, error: message }, { status: 400 });
@@ -38,8 +41,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    await dbConnect();
-    const routine = await Routine.findOneAndDelete({ _id: id, userId: userId });
+    const [routine] = await db.delete(routines).where(own(id, userId)).returning({ id: routines.id });
 
     if (!routine) {
       return NextResponse.json({ success: false, error: 'Routine not found or unauthorized' }, { status: 404 });

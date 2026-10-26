@@ -46,3 +46,6 @@ android/build/
 android/app/build/
 android/local.properties
 android/.kotlin/
+
+# vercel
+.vercel

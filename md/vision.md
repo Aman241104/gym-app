@@ -69,17 +69,16 @@ and UX only. Never copy their code or assets.
 ## Platform (decided 2026-10-27)
 
 **Native Android (Kotlin + Compose)** in `android/`, with MindCore's exact glass and Lotus theme.
-The Next.js + MongoDB code is the backend. The app is local-first: writes go to the phone, then an
+The Next.js + Neon Postgres code is the backend. The app is local-first: writes go to the phone, then an
 outbox replays them to the API. The app authenticates with `Authorization: Bearer $APP_TOKEN` and acts
 as `OWNER_USER_ID` (see `lib/apiUser.ts`). Both env vars must be set on the server.
 
 ## Current state of this repo
 
-- Next.js 16 + MongoDB/Mongoose + next-auth + Recharts. Workout logging, history, dashboard and an
+- Next.js 16 + Neon Postgres (Drizzle) + next-auth (GitHub, JWT) + Recharts. Workout logging, history, dashboard and an
   overload suggestion card.
 - See `implementation-plan.md` for the original phases (all done).
 - `android/`: glass dock (Today / Train / You), workout logging with overload prefill, rest timer,
   history with edit/delete, guided 10-min posture routine (equipment-aware, posture streak),
   equipment checklist, units, offline sync. Build: `cd android && ./gradlew assembleDebug`.
-- Backend blocker (2026-10-27): the Atlas host in `.env.local` doesn't resolve, so sync can't work
-  until MONGODB_URI points at a live cluster. Vercel project `gym-app` has no env vars yet.
+- Database moved to Neon on 2026-10-27 (Atlas cluster was gone). See `md/database.md`.
