@@ -57,6 +57,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import app.gymapp.domain.PlanDay
+import app.gymapp.domain.PreferredExerciseIds
 import app.gymapp.domain.doableWith
 import app.gymapp.ui.library.ExerciseSheet
 import app.gymapp.domain.formatWeight
@@ -196,7 +197,12 @@ fun LogScreen(onDone: () -> Unit) {
         item {
             // Recent exercises first, then everything in the library your equipment allows.
             val q = query.trim()
-            val doable = remember(library, kit) { library.filter { it.category != "stretching" && it.doableWith(kit) }.map { it.name } }
+            val doable = remember(library, kit) {
+                // Planner favourites first, then the rest of what your equipment allows, A-Z.
+                val byId = library.associateBy { it.id }
+                val favourites = PreferredExerciseIds.mapNotNull { byId[it] }.filter { it.doableWith(kit) }
+                (favourites + library.filter { it.category != "stretching" && it.doableWith(kit) }).map { it.name }.distinct()
+            }
             val names = (history.values.map { it.name } + doable).distinctBy { it.lowercase() }
                 .filter { q.isBlank() || it.contains(q, ignoreCase = true) }
                 .filterNot { n -> Draft.exercises.any { it.name.equals(n, ignoreCase = true) } }

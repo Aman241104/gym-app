@@ -104,9 +104,12 @@ fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, o
 
     // Today's four rings. Something not scheduled today counts as done, so rest days can close.
     data class Goal(val label: String, val color: Color, val progress: Float, val status: String)
+    // Until the plan is built (library still loading) nothing counts as "not scheduled = done",
+    // otherwise the rings would fill and then snap back on every cold start.
+    val known = plan != null
     val goals = listOf(
-        Goal("Train", train, if (liftDay == null || today in liftDates) 1f else 0f, if (liftDay == null) "Rest day" else if (today in liftDates) "Done" else liftDay.title),
-        Goal("Run", run, if (!runDay || today in runDates) 1f else 0f, if (!runDay) "Not today" else if (today in runDates) "Done" else "To do"),
+        Goal("Train", train, if (known && (liftDay == null || today in liftDates)) 1f else 0f, if (!known) "…" else if (liftDay == null) "Rest day" else if (today in liftDates) "Done" else liftDay.title),
+        Goal("Run", run, if (known && (!runDay || today in runDates)) 1f else 0f, if (!known) "…" else if (!runDay) "Not today" else if (today in runDates) "Done" else "To do"),
         Goal("Protein", eat, target?.let { (protein / it).toFloat() } ?: 0f, target?.let { "%.0f / %d g".format(protein, it) } ?: "Set weight"),
         Goal("Posture", posture, if (today in postureDates) 1f else 0f, if (today in postureDates) "Done" else "10 min"),
     )

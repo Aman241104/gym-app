@@ -39,6 +39,10 @@ private val push = "Push" to listOf(hPush, vPush, inclinePush, lateral, rearDelt
 private val pull = "Pull" to listOf(vPull, hPull, hPull2, rearDelt, biceps)
 private val legs = "Legs" to listOf(squat, hinge, singleLeg, legCurl, calves, core)
 
+/** Every slot's hand-picked exercises, best first: good default suggestions when nothing is typed. */
+val PreferredExerciseIds: List<String> = listOf(squat, hPush, hPull, vPull, hinge, vPush, rearDelt, singleLeg, inclinePush, lateral, legCurl, biceps, triceps, calves, core)
+    .flatMap { it.prefer }.distinct()
+
 private val schedules: Map<Int, List<Pair<DayOfWeek, Pair<String, List<Slot>>>>> = mapOf(
     2 to listOf(MONDAY to fullBody, THURSDAY to fullBody),
     3 to listOf(MONDAY to fullBody, WEDNESDAY to fullBody, FRIDAY to fullBody),
