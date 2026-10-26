@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import app.gymapp.data.Repo
 import app.gymapp.ui.eat.EatScreen
+import app.gymapp.ui.mind.BreatheScreen
 import app.gymapp.ui.design.Aurora
 import app.gymapp.ui.glass.GlassLook
 import app.gymapp.ui.posture.PostureScanScreen
@@ -86,8 +87,9 @@ private fun MainScaffold(dark: Boolean) {
                 "posture" -> PostureScreen(onDone = close, onScan = { route = "scan" })
                 "scan" -> PostureScanScreen(onBack = { route = "posture" })
                 "running" -> ActiveRunScreen(onClose = close)
+                "breathe" -> BreatheScreen(onClose = close)
                 else -> when (tab) {
-                    0 -> TodayScreen(onStart = startWorkout, onPosture = { route = "posture" }, onRun = { tab = 2 }, onEat = { tab = 3 })
+                    0 -> TodayScreen(onStart = startWorkout, onPosture = { route = "posture" }, onRun = { tab = 2 }, onEat = { tab = 3 }, onBreathe = { route = "breathe" })
                     1 -> TrainScreen(onStart = startWorkout)
                     2 -> RunScreen(onOpenRun = { route = "running" })
                     3 -> EatScreen()

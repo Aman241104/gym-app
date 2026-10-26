@@ -40,6 +40,7 @@ private val SWAPS = stringPreferencesKey("plan_swaps")
 private val RUNS = stringPreferencesKey("runs")
 private val SCANS = stringPreferencesKey("posture_scans")
 private val FOOD = stringPreferencesKey("food")
+private val MIND = stringPreferencesKey("mind_minutes")
 
 private val workoutList = ListSerializer(Workout.serializer())
 private val runList = ListSerializer(Run.serializer())
@@ -71,6 +72,8 @@ object Repo {
     private val _postureDays = MutableStateFlow<Set<String>>(emptySet())
     // ponytail: exercise swaps are phone-only, like posture days.
     private val _swaps = MutableStateFlow<Map<String, Int>>(emptyMap())
+    // ponytail: breathing minutes per day, phone-only like posture days.
+    private val _mind = MutableStateFlow<Map<String, Int>>(emptyMap())
     private val _library = MutableStateFlow<List<LibExercise>>(emptyList())
     // Phone-only on purpose: body photos and their numbers never leave the device.
     private val _scans = MutableStateFlow<List<PostureScan>>(emptyList())
@@ -89,6 +92,8 @@ object Repo {
     val postureDays: StateFlow<Set<String>> = _postureDays
     /** Per planner slot, how many times "swap" was tapped. */
     val swaps: StateFlow<Map<String, Int>> = _swaps
+    /** Breathing minutes per local date (yyyy-mm-dd). */
+    val mind: StateFlow<Map<String, Int>> = _mind
     /** free-exercise-db, loaded once from assets. */
     val library: StateFlow<List<LibExercise>> = _library
     val scans: StateFlow<List<PostureScan>> = _scans
@@ -106,6 +111,7 @@ object Repo {
             _outbox.value = prefs.read(OUTBOX, outboxList) ?: emptyList()
             _postureDays.value = prefs.read(POSTURE, postureList)?.toSet() ?: emptySet()
             _swaps.value = prefs.read(SWAPS, swapMap) ?: emptyMap()
+            _mind.value = prefs.read(MIND, swapMap) ?: emptyMap()
             _scans.value = prefs.read(SCANS, scanList) ?: emptyList()
             _foods.value = IndianFoods + parseIfct(appContext.assets.open("ifct.json").bufferedReader().use { it.readText() })
             _library.value = parseLibrary(appContext.assets.open("exercises.json").bufferedReader().use { it.readText() })
@@ -189,6 +195,12 @@ object Repo {
         persist()
     }
 
+    fun logMind(minutes: Int) = scope.launch {
+        val day = LocalDate.now().toString()
+        _mind.update { it + (day to (it[day] ?: 0) + minutes) }
+        persist()
+    }
+
     fun syncNow() = scope.launch { sync() }
 
     private suspend fun sync() = syncLock.withLock {
@@ -260,6 +272,7 @@ object Repo {
             it[OUTBOX] = json.encodeToString(outboxList, _outbox.value)
             it[POSTURE] = json.encodeToString(postureList, _postureDays.value.toList())
             it[SWAPS] = json.encodeToString(swapMap, _swaps.value)
+            it[MIND] = json.encodeToString(swapMap, _mind.value)
             it[SCANS] = json.encodeToString(scanList, _scans.value)
         }
     }

@@ -56,6 +56,7 @@ import app.gymapp.domain.nextRun
 import app.gymapp.domain.goalOf
 import app.gymapp.domain.proteinTarget
 import androidx.compose.material.icons.rounded.Restaurant
+import androidx.compose.material.icons.rounded.Air
 import app.gymapp.domain.runDays
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import java.time.Instant
@@ -68,7 +69,8 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 @Composable
-fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, onEat: () -> Unit) {
+fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, onEat: () -> Unit, onBreathe: () -> Unit) {
+    val mind by Repo.mind.collectAsState()
     val food by Repo.food.collectAsState()
     val runs by Repo.runs.collectAsState()
     val postureDays by Repo.postureDays.collectAsState()
@@ -192,6 +194,19 @@ fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit, o
                     "Protein", "%.0f g".format(protein), target?.let { if (protein >= it) "Target hit" else "of $it g today" } ?: "Set your weight",
                     Icons.Rounded.Restaurant, eat, onEat, Modifier.weight(1f).fillMaxHeight(),
                 )
+            }
+        }
+        item {
+            val mins = mind[today.toString()] ?: 0
+            Panel(accent = Accent.Mind.color, onClick = onBreathe) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("MIND", style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.4.sp), color = Accent.Mind.color)
+                        Text(if (mins > 0) "$mins min breathed today" else "Two minutes to breathe", style = MaterialTheme.typography.titleLarge)
+                        Muted("Box, 4-7-8 or coherent breathing, guided by a gentle circle.")
+                    }
+                    Icon(Icons.Rounded.Air, contentDescription = null, tint = Accent.Mind.color, modifier = Modifier.size(34.dp))
+                }
             }
         }
         if (runDay) item {

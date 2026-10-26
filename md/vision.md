@@ -89,6 +89,11 @@ as `OWNER_USER_ID` (see `lib/apiUser.ts`). Both env vars must be set on the serv
     diet type incl. Jain, protein target from weight + goal, protein-gap suggestions.
   - Local-first with an outbox; syncs workouts, runs, food and settings to the API.
   Build: `cd android && ./gradlew assembleDebug`.
-- Still to build: posing coach + progress gallery, body heat-map, barcode scan (Open Food Facts),
-  then the Mind / Career / Read / Skin / Style modules. Web login needs a GitHub OAuth app for the Vercel URL.
+- Design system (`android/.../ui/design`): per-module accents (Train pink, Run peach, Eat sage,
+  Posture lavender, Mind sky), Instrument Serif italic phrase in headers, animated rings, count-ups,
+  rise-in cards with spring press + haptics, drifting aurora. Today = 4 daily rings + week strip.
+- Also built: 7-day muscle balance, posture then/now photos, barcode scan (Open Food Facts),
+  Mind module v1 (box / 4-7-8 / coherent breathing).
+- Still to build: live posing coach (CameraX + ghost outline), then Career / Read / Skin / Style.
+  Web login needs a GitHub OAuth app for the Vercel URL.
 - Database moved to Neon on 2026-10-27 (Atlas cluster was gone). See `md/database.md`.
