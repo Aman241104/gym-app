@@ -34,13 +34,25 @@ data class Settings(
     val planStart: String? = null,
 )
 
+/** A finished (or stopped early) run. [plan] is the Couch-to-5K code like "W1D2", null for a free run. */
+@Serializable
+data class Run(
+    @SerialName("_id") val serverId: String? = null,
+    val clientId: String,
+    val date: String,
+    val plan: String? = null,
+    val durationSec: Int,
+    val distanceM: Int,
+    val completed: Boolean,
+)
+
 /** Where the Next.js backend lives. Local only, never sent anywhere but that server. */
 @Serializable
 data class Server(val url: String = "", val token: String = "") {
     val configured: Boolean get() = url.isNotBlank() && token.isNotBlank()
 }
 
-/** kind: "workout" (POST, upserts by clientId), "update" (PUT serverId), "delete" (DELETE serverId), "settings". */
+/** kind: "workout" / "run" (POST, upserts by clientId), "update" (PUT serverId), "delete" (DELETE serverId), "settings". */
 @Serializable
 data class OutboxEntry(val kind: String, val clientId: String? = null, val serverId: String? = null)
 

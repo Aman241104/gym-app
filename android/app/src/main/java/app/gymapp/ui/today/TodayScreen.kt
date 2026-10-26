@@ -32,6 +32,11 @@ import app.gymapp.ui.Muted
 import app.gymapp.ui.rememberWeekPlan
 import app.gymapp.ui.train.Draft
 import app.gymapp.domain.lastByExercise
+import app.gymapp.domain.nextRun
+import app.gymapp.domain.runDays
+import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
+import java.time.Instant
+import java.time.ZoneId
 import app.gymapp.ui.Panel
 import app.gymapp.ui.ScreenHeader
 import app.gymapp.ui.ScreenPadding
@@ -40,7 +45,8 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
 @Composable
-fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit) {
+fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit, onRun: () -> Unit) {
+    val runs by Repo.runs.collectAsState()
     val postureDays by Repo.postureDays.collectAsState()
     val planState = rememberWeekPlan()
     val workouts by Repo.workouts.collectAsState()
@@ -114,6 +120,24 @@ fun TodayScreen(onStart: () -> Unit, onPosture: () -> Unit) {
                         if (doneToday) Icons.Rounded.CheckCircle else Icons.Rounded.SelfImprovement,
                         contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp),
                     )
+                }
+            }
+        }
+        planState?.let { (plan, _) ->
+            if (today.dayOfWeek in runDays(plan.days.map { it.day }.toSet())) item {
+                val next = nextRun(runs.filter { it.completed }.mapNotNull { it.plan }.toSet())
+                val ranToday = runs.any { Instant.parse(it.date).atZone(ZoneId.systemDefault()).toLocalDate() == today }
+                Panel(Modifier.clickable(onClick = onRun)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Run · ${next.totalSeconds / 60} min", style = MaterialTheme.typography.titleLarge)
+                            Muted(if (ranToday) "Done today." else "Week ${next.week}, run ${next.day}: ${next.summary}")
+                        }
+                        Icon(
+                            if (ranToday) Icons.Rounded.CheckCircle else Icons.AutoMirrored.Rounded.DirectionsRun,
+                            contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp),
+                        )
+                    }
                 }
             }
         }

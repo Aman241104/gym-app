@@ -34,8 +34,10 @@ private val SERVER = stringPreferencesKey("server")
 private val OUTBOX = stringPreferencesKey("outbox")
 private val POSTURE = stringPreferencesKey("posture_days")
 private val SWAPS = stringPreferencesKey("plan_swaps")
+private val RUNS = stringPreferencesKey("runs")
 
 private val workoutList = ListSerializer(Workout.serializer())
+private val runList = ListSerializer(Run.serializer())
 private val outboxList = ListSerializer(OutboxEntry.serializer())
 private val postureList = ListSerializer(String.serializer())
 private val swapMap = MapSerializer(String.serializer(), Int.serializer())
@@ -50,6 +52,7 @@ object Repo {
     private lateinit var appContext: Context
 
     private val _workouts = MutableStateFlow<List<Workout>>(emptyList())
+    private val _runs = MutableStateFlow<List<Run>>(emptyList())
     private val _settings = MutableStateFlow(Settings())
     private val _server = MutableStateFlow(Server())
     private val _outbox = MutableStateFlow<List<OutboxEntry>>(emptyList())
@@ -62,6 +65,7 @@ object Repo {
     private val _library = MutableStateFlow<List<LibExercise>>(emptyList())
 
     val workouts: StateFlow<List<Workout>> = _workouts
+    val runs: StateFlow<List<Run>> = _runs
     val settings: StateFlow<Settings> = _settings
     val server: StateFlow<Server> = _server
     val outbox: StateFlow<List<OutboxEntry>> = _outbox
@@ -80,6 +84,7 @@ object Repo {
         scope.launch {
             val prefs = appContext.store.data.first()
             _workouts.value = prefs.read(WORKOUTS, workoutList) ?: emptyList()
+            _runs.value = prefs.read(RUNS, runList) ?: emptyList()
             _settings.value = prefs.read(SETTINGS, Settings.serializer()) ?: Settings()
             _server.value = prefs.read(SERVER, Server.serializer()) ?: Server()
             _outbox.value = prefs.read(OUTBOX, outboxList) ?: emptyList()
@@ -100,6 +105,13 @@ object Repo {
         _workouts.update { list -> if (editing == null) listOf(workout) + list else list.map { if (it.key == workout.key) workout else it } }
         val entry = if (workout.serverId != null) OutboxEntry("update", serverId = workout.serverId) else OutboxEntry("workout", workout.clientId)
         _outbox.update { box -> if (entry in box) box else box + entry }
+        persist()
+        sync()
+    }
+
+    fun saveRun(run: Run) = scope.launch {
+        _runs.update { listOf(run) + it }
+        _outbox.update { it + OutboxEntry("run", run.clientId) }
         persist()
         sync()
     }
@@ -162,6 +174,9 @@ object Repo {
                         Api.call(server, "PUT", "/api/workouts/${entry.serverId}", Workout.serializer(), json.encodeToString(Workout.serializer(), it.copy(serverId = null)))
                     }
                     "delete" -> Api.call(server, "DELETE", "/api/workouts/${entry.serverId}", JsonObject.serializer())
+                    "run" -> _runs.value.find { it.clientId == entry.clientId }?.let {
+                        Api.call(server, "POST", "/api/runs", Run.serializer(), json.encodeToString(Run.serializer(), it.copy(serverId = null)))
+                    }
                     "settings" -> Api.call(server, "POST", "/api/settings", Settings.serializer(), json.encodeToString(Settings.serializer(), _settings.value))
                 }
                 _outbox.update { it - entry }
@@ -169,9 +184,14 @@ object Repo {
             }
             val remote = Api.call(server, "GET", "/api/workouts", workoutList)
             val remoteSettings = Api.call(server, "GET", "/api/settings", Settings.serializer())
+            val remoteRuns = Api.call(server, "GET", "/api/runs", runList)
             // Anything saved while this sync ran is still queued: keep it rather than let the pull erase it.
             val pending = _outbox.value
             _workouts.update { local -> merge(local, remote, pending) }
+            _runs.update { local ->
+                val queued = pending.filter { it.kind == "run" }.mapNotNull { it.clientId }.toSet()
+                local.filter { it.clientId in queued && remoteRuns.none { r -> r.clientId == it.clientId } } + remoteRuns
+            }
             if (pending.none { it.kind == "settings" }) _settings.value = remoteSettings
             persist()
             _syncError.value = null
@@ -185,6 +205,7 @@ object Repo {
     private suspend fun persist() {
         appContext.store.edit {
             it[WORKOUTS] = json.encodeToString(workoutList, _workouts.value)
+            it[RUNS] = json.encodeToString(runList, _runs.value)
             it[SETTINGS] = json.encodeToString(Settings.serializer(), _settings.value)
             it[SERVER] = json.encodeToString(Server.serializer(), _server.value)
             it[OUTBOX] = json.encodeToString(outboxList, _outbox.value)

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.WbSunny
@@ -37,6 +38,7 @@ import com.kyant.backdrop.Backdrop
 internal val tabs = listOf(
     "Today" to Icons.Rounded.WbSunny,
     "Train" to Icons.Rounded.FitnessCenter,
+    "Run" to Icons.AutoMirrored.Rounded.DirectionsRun,
     "You" to Icons.Rounded.Person,
 )
 

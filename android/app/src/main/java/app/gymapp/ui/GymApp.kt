@@ -26,6 +26,8 @@ import androidx.compose.ui.platform.LocalContext
 import app.gymapp.data.Repo
 import app.gymapp.ui.glass.GlassLook
 import app.gymapp.ui.posture.PostureScreen
+import app.gymapp.ui.run.ActiveRunScreen
+import app.gymapp.ui.run.RunScreen
 import app.gymapp.ui.theme.LotusDark
 import app.gymapp.ui.theme.LotusLight
 import app.gymapp.ui.theme.LotusTypography
@@ -50,7 +52,7 @@ fun GymApp() {
 @Composable
 private fun MainScaffold(dark: Boolean) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    // A full-screen flow pushed over the tabs: "log" (session) or "posture" (guided routine).
+    // A full-screen flow pushed over the tabs: "log" (session), "posture" (guided routine) or "running".
     var route by rememberSaveable { mutableStateOf<String?>(null) }
     BackHandler(enabled = route != null) { route = null }
     val backdrop = rememberLayerBackdrop()
@@ -79,9 +81,11 @@ private fun MainScaffold(dark: Boolean) {
             when (route) {
                 "log" -> LogScreen(onDone = close)
                 "posture" -> PostureScreen(onDone = close)
+                "running" -> ActiveRunScreen(onClose = close)
                 else -> when (tab) {
-                    0 -> TodayScreen(onStart = startWorkout, onPosture = { route = "posture" })
+                    0 -> TodayScreen(onStart = startWorkout, onPosture = { route = "posture" }, onRun = { tab = 2 })
                     1 -> TrainScreen(onStart = startWorkout)
+                    2 -> RunScreen(onOpenRun = { route = "running" })
                     else -> YouScreen()
                 }
             }
