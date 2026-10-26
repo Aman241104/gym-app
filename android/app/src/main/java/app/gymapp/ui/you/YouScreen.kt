@@ -43,7 +43,7 @@ fun YouScreen() {
     val settings by Repo.settings.collectAsState()
 
     LazyColumn(contentPadding = ScreenPadding, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { ScreenHeader("Settings", "You") }
+        item { ScreenHeader("Settings", "Your", "setup") }
         item {
             Panel {
                 Text("Equipment", style = MaterialTheme.typography.titleLarge)

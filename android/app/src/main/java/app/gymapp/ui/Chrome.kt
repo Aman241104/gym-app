@@ -31,6 +31,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import app.gymapp.ui.design.Serif
+import app.gymapp.ui.design.pressable
+import app.gymapp.ui.design.rise
+import androidx.compose.foundation.border
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
 import app.gymapp.ui.glass.GlassLook
 import app.gymapp.ui.glass.LiquidBottomTab
 import app.gymapp.ui.glass.LiquidBottomTabs
@@ -46,19 +56,6 @@ internal val tabs = listOf(
 
 /** Leaves room under the floating glass dock. */
 internal val ScreenPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 128.dp)
-
-/** Soft lotus light behind the content so the glass dock has color to refract (same idea as MindCore's Glow). */
-@Composable
-internal fun Glow() {
-    val scheme = MaterialTheme.colorScheme
-    Canvas(Modifier.fillMaxSize()) {
-        fun glow(color: Color, center: Offset, radius: Float) =
-            drawCircle(Brush.radialGradient(listOf(color, Color.Transparent), center, radius), radius, center)
-        glow(scheme.primary.copy(alpha = 0.22f), Offset(size.width * 0.1f, size.height * 0.06f), size.width * 0.9f)
-        glow(scheme.tertiary.copy(alpha = 0.16f), Offset(size.width * 1.0f, size.height * 0.5f), size.width * 0.8f)
-        glow(scheme.secondary.copy(alpha = 0.16f), Offset(0f, size.height * 0.95f), size.width * 0.8f)
-    }
-}
 
 @Composable
 internal fun BottomBar(
@@ -94,22 +91,50 @@ internal fun BottomBar(
     }
 }
 
+/**
+ * Screen title in the Oura-style duet: a bold grotesque [title] and, after it, one warm
+ * [serif] italic phrase in the screen's accent colour.
+ */
 @Composable
-internal fun ScreenHeader(eyebrow: String, title: String) {
-    Column(Modifier.statusBarsPadding().padding(top = 20.dp, bottom = 12.dp)) {
-        Text(eyebrow.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-        Text(title, style = MaterialTheme.typography.displaySmall)
+internal fun ScreenHeader(eyebrow: String, title: String, serif: String? = null, accent: Color = MaterialTheme.colorScheme.primary) {
+    Column(Modifier.statusBarsPadding().padding(top = 24.dp, bottom = 10.dp).rise()) {
+        Text(eyebrow.uppercase(), style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 1.6.sp), color = accent)
+        Text(
+            buildAnnotatedString {
+                append(title)
+                if (serif != null) {
+                    append(" ")
+                    withStyle(SpanStyle(fontFamily = Serif, fontStyle = FontStyle.Italic, fontWeight = FontWeight.Normal, color = accent)) { append(serif) }
+                }
+            },
+            style = MaterialTheme.typography.displaySmall,
+        )
     }
 }
 
+/**
+ * The card every screen is built from: soft vertical gradient, a hairline edge, an optional
+ * accent wash in the corner, rises in on first show, and squeezes + ticks when tappable.
+ */
 @Composable
-internal fun Panel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+internal fun Panel(
+    modifier: Modifier = Modifier,
+    accent: Color? = null,
+    onClick: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(28.dp)
     Column(
         modifier
+            .rise()
+            .then(if (onClick != null) Modifier.pressable(onClick) else Modifier)
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.78f))
-            .padding(18.dp),
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(scheme.surfaceContainerHigh.copy(alpha = 0.82f), scheme.surfaceContainer.copy(alpha = 0.66f))))
+            .then(if (accent != null) Modifier.background(Brush.radialGradient(listOf(accent.copy(alpha = 0.16f), Color.Transparent), center = Offset.Zero, radius = 700f)) else Modifier)
+            .border(1.dp, scheme.outlineVariant.copy(alpha = 0.35f), shape)
+            .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
         content = content,
     )

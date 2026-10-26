@@ -1,5 +1,14 @@
 package app.gymapp.ui.train
 
+import app.gymapp.domain.muscleBalance
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import app.gymapp.ui.design.Accent
+import app.gymapp.ui.design.rise
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,15 +63,16 @@ fun TrainScreen(onStart: () -> Unit) {
     var confirmDelete by remember { mutableStateOf<Workout?>(null) }
     var detail by remember { mutableStateOf<LibExercise?>(null) }
     val planState = rememberWeekPlan()
+    val library by Repo.library.collectAsState()
     val workouts by Repo.workouts.collectAsState()
     val settings by Repo.settings.collectAsState()
     val outbox by Repo.outbox.collectAsState()
     val pending = outbox.flatMap { listOfNotNull(it.clientId, it.serverId) }.toSet()
 
     LazyColumn(contentPadding = ScreenPadding, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { ScreenHeader("Gym", "Train") }
+        item { ScreenHeader("Gym", "Train", "smart", Accent.Train.color) }
         item {
-            Button(onClick = onStart, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+            Button(onClick = onStart, colors = ButtonDefaults.buttonColors(containerColor = Accent.Train.color), modifier = Modifier.fillMaxWidth().height(56.dp).rise()) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null)
                 Text(if (Draft.exercises.isEmpty()) "  Start workout" else "  Resume workout", style = MaterialTheme.typography.titleMedium)
             }
@@ -76,7 +86,7 @@ fun TrainScreen(onStart: () -> Unit) {
             }
             if (settings.equipment.isEmpty()) item { Muted("Tick your equipment on the You tab to get a plan that fits your gym.") }
             items(plan.days, key = { "plan-${it.day}" }) { day ->
-                Panel {
+                Panel(accent = Accent.Train.color) {
                     Text(
                         "${day.day.getDisplayName(TextStyle.FULL, Locale.getDefault())} · ${day.title}",
                         style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary,
@@ -93,6 +103,24 @@ fun TrainScreen(onStart: () -> Unit) {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+        if (workouts.isNotEmpty() && library.isNotEmpty()) item {
+            val balance = muscleBalance(workouts, library)
+            val max = balance.maxOf { it.second }.coerceAtLeast(1.0)
+            val accent = Accent.Train.color
+            Panel {
+                Text("Muscle balance", style = MaterialTheme.typography.titleLarge)
+                Muted("Sets per area in the last 7 days. Grey means neglected.")
+                balance.forEach { (region, sets) ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                        Text(region, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.fillMaxWidth(0.32f))
+                        Box(Modifier.weight(1f).height(10.dp).clip(RoundedCornerShape(5.dp)).background(accent.copy(alpha = 0.12f))) {
+                            Box(Modifier.fillMaxWidth((sets / max).toFloat()).fillMaxHeight().clip(RoundedCornerShape(5.dp)).background(accent.copy(alpha = 0.45f + 0.55f * (sets / max).toFloat())))
+                        }
+                        Muted(if (sets == 0.0) "none" else "%.0f".format(sets), Modifier.padding(start = 10.dp).fillMaxWidth(0.12f))
                     }
                 }
             }

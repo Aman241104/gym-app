@@ -48,4 +48,14 @@ class PlannerTest {
         val swapped = buildPlan(library, kit, 3, Goal.Strength, 0, mapOf("h_push" to 1))
         assertTrue(normal.days[0].exercises.first { it.slot.key == "h_push" }.exercise != swapped.days[0].exercises.first { it.slot.key == "h_push" }.exercise)
     }
+
+    @Test fun muscleBalanceCountsPrimaryAndSecondary() {
+        val today = java.time.LocalDate.of(2026, 10, 27)
+        val at = today.atTime(18, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toString()
+        val old = today.minusDays(9).atTime(18, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toString()
+        val row = app.gymapp.data.Exercise("Seated Cable Rows", List(3) { app.gymapp.data.SetEntry(10, 40.0) })
+        val balance = muscleBalance(listOf(app.gymapp.data.Workout(date = at, exercises = listOf(row)), app.gymapp.data.Workout(date = old, exercises = listOf(row))), library, today).toMap()
+        assertEquals(4.5, balance["Upper back"]!!, 0.01) // 3 middle back (primary) + 1.5 lats (secondary); old workout ignored
+        assertEquals(0.0, balance["Quads"]!!, 0.0)
+    }
 }

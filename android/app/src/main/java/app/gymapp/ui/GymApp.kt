@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import app.gymapp.data.Repo
 import app.gymapp.ui.eat.EatScreen
+import app.gymapp.ui.design.Aurora
 import app.gymapp.ui.glass.GlassLook
 import app.gymapp.ui.posture.PostureScanScreen
 import app.gymapp.ui.posture.PostureScreen
@@ -79,7 +80,7 @@ private fun MainScaffold(dark: Boolean) {
     val close = { route = null }
     Box(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().layerBackdrop(backdrop)) {
-            Glow()
+            Aurora()
             when (route) {
                 "log" -> LogScreen(onDone = close)
                 "posture" -> PostureScreen(onDone = close, onScan = { route = "scan" })

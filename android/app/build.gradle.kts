@@ -57,6 +57,8 @@ dependencies {
     implementation(libs.coil.network)
     // On-device pose landmarks for the posture scan (Apache-2.0); photos never leave the phone.
     implementation(libs.mediapipe.vision)
+    // Google's barcode scanner UI (no camera permission needed) for packaged food.
+    implementation(libs.code.scanner)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     testImplementation(libs.junit)

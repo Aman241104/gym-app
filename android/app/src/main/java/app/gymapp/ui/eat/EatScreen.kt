@@ -1,5 +1,7 @@
 package app.gymapp.ui.eat
 
+import app.gymapp.ui.design.Accent
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.gymapp.data.FoodEntry
+import app.gymapp.data.OpenFoodFacts
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+import kotlinx.coroutines.launch
 import app.gymapp.data.Repo
 import app.gymapp.domain.Food
 import app.gymapp.domain.fits
@@ -69,17 +79,20 @@ fun EatScreen() {
     val target = settings.bodyWeightKg?.let { proteinTarget(it, goalOf(settings.goal)) }
     var query by rememberSaveable { mutableStateOf("") }
     var adding by remember { mutableStateOf<Food?>(null) }
+    var scanNote by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LazyColumn(contentPadding = ScreenPadding, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { ScreenHeader(today.format(DateTimeFormatter.ofPattern("EEEE, d MMM")), "Eat") }
+        item { ScreenHeader(today.format(DateTimeFormatter.ofPattern("EEEE, d MMM")), "Eat", "well", Accent.Eat.color) }
         if (settings.dietType == null || settings.bodyWeightKg == null) item { SetupPanel(settings.dietType, settings.bodyWeightKg) }
         item {
-            Panel {
+            Panel(accent = Accent.Eat.color) {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    Text("${fmt(protein)} g", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary)
+                    Text("${fmt(protein)} g", style = MaterialTheme.typography.displayMedium, color = Accent.Eat.color)
                     Muted(target?.let { "  of $it g protein" } ?: "  protein", Modifier.padding(bottom = 6.dp))
                 }
-                if (target != null) LinearProgressIndicator(progress = { (protein / target).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
+                if (target != null) LinearProgressIndicator(progress = { (protein / target).toFloat().coerceIn(0f, 1f) }, color = Accent.Eat.color, trackColor = Accent.Eat.color.copy(alpha = 0.18f), modifier = Modifier.fillMaxWidth().height(8.dp))
                 Muted("${fmt(todays.sumOf { it.kcal })} kcal · ${fmt(todays.sumOf { it.carbs })} g carbs · ${fmt(todays.sumOf { it.fat })} g fat")
             }
         }
@@ -94,11 +107,26 @@ fun EatScreen() {
             }
         }
         item {
-            OutlinedTextField(
-                value = query, onValueChange = { query = it }, label = { Text("Search food (roti, dal, paneer…)") },
-                singleLine = true, modifier = Modifier.fillMaxWidth(),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = query, onValueChange = { query = it }, label = { Text("Search food (roti, dal, paneer…)") },
+                    singleLine = true, modifier = Modifier.weight(1f),
+                )
+                FilledTonalIconButton(onClick = {
+                    scanNote = null
+                    GmsBarcodeScanning.getClient(context).startScan().addOnSuccessListener { code ->
+                        val raw = code.rawValue ?: return@addOnSuccessListener
+                        scanNote = "Looking up $raw…"
+                        scope.launch {
+                            val found = OpenFoodFacts.lookup(raw)
+                            scanNote = if (found == null) "Not in Open Food Facts yet. Search by name instead." else null
+                            adding = found
+                        }
+                    }
+                }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.QrCodeScanner, contentDescription = "Scan a barcode") }
+            }
         }
+        scanNote?.let { note -> item { Muted(note) } }
         val q = query.trim()
         if (q.isNotEmpty()) {
             val results = foods.filter { it.fits(settings.dietType) && it.name.contains(q, ignoreCase = true) }.take(25)
@@ -124,7 +152,7 @@ fun EatScreen() {
                 IconButton(onClick = { Repo.deleteFood(e) }) { Icon(Icons.Rounded.DeleteOutline, contentDescription = "Remove ${e.name}") }
             }
         }
-        item { Muted("Cooked foods use approximate home-style portions (1 katori ≈ 150 ml). Raw foods: IFCT 2017 per 100 g.", Modifier.padding(top = 8.dp)) }
+        item { Muted("Cooked foods use approximate home-style portions (1 katori ≈ 150 ml). Raw foods: IFCT 2017 per 100 g. Packaged foods: Open Food Facts (ODbL).", Modifier.padding(top = 8.dp)) }
     }
 
     adding?.let { food -> AddDialog(food, onDismiss = { adding = null }) { servings ->

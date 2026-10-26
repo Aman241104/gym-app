@@ -1,5 +1,6 @@
 package app.gymapp.ui.posture
 
+import app.gymapp.ui.design.Accent
 import android.os.SystemClock
 import android.speech.tts.TextToSpeech
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
@@ -183,7 +184,7 @@ fun PostureScreen(onDone: () -> Unit, onScan: () -> Unit) {
                 val total = if (ready) READY_MS else move.seconds * 1000L
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Box(Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) {
-                        val ring = MaterialTheme.colorScheme.primary
+                        val ring = Accent.Posture.color
                         val track = MaterialTheme.colorScheme.surfaceContainerHigh
                         Canvas(Modifier.size(220.dp)) {
                             val stroke = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round)

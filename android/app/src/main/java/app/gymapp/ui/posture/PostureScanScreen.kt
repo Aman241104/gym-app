@@ -1,6 +1,11 @@
 package app.gymapp.ui.posture
 
 import android.content.Context
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.layout.ContentScale
+import app.gymapp.ui.design.Accent
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -207,6 +212,8 @@ fun PostureScanScreen(onBack: () -> Unit) {
                 }
             }
         }
+        val sides = scans.filter { it.kind == "side" }.sortedBy { it.date }
+        if (sides.size >= 2) item { ThenAndNow(context, sides.first(), sides.last()) }
         if (scans.isNotEmpty()) {
             item { Text("History", style = MaterialTheme.typography.titleLarge) }
             items(scans.sortedByDescending { it.date }) { s ->
@@ -217,6 +224,34 @@ fun PostureScanScreen(onBack: () -> Unit) {
                         else "Shoulders %.1f° · hips %.1f°".format(s.shoulderTilt, s.hipTilt),
                         style = MaterialTheme.typography.bodyLarge,
                     )
+                }
+            }
+        }
+    }
+}
+
+/** First vs latest side photo, the "progress gallery" view. Photos are read from app storage only. */
+@Composable
+private fun ThenAndNow(context: Context, first: PostureScan, latest: PostureScan) {
+    var images by remember { mutableStateOf<Pair<Bitmap?, Bitmap?>>(null to null) }
+    LaunchedEffect(first.photo, latest.photo) {
+        images = withContext(Dispatchers.IO) {
+            fun load(name: String) = File(File(context.filesDir, "scans"), name).takeIf { it.exists() }
+                ?.let { runCatching { ImageDecoder.decodeBitmap(ImageDecoder.createSource(it)) { d, info, _ -> d.setTargetSampleSize(maxOf(1, maxOf(info.size.width, info.size.height) / 700)) } }.getOrNull() }
+            load(first.photo) to load(latest.photo)
+        }
+    }
+    Panel(accent = Accent.Posture.color) {
+        Text("Then and now", style = MaterialTheme.typography.titleLarge)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf(first to images.first, latest to images.second).forEachIndexed { i, (scan, bmp) ->
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.fillMaxWidth().aspectRatio(3f / 4f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                        bmp?.let { Image(it.asImageBitmap(), contentDescription = if (i == 0) "First posture photo" else "Latest posture photo", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
+                    }
+                    Text(if (i == 0) "First" else "Latest", style = MaterialTheme.typography.labelLarge, color = Accent.Posture.color)
+                    Muted(Instant.parse(scan.date).atZone(ZoneId.systemDefault()).format(dayFormat))
+                    Text("Head %.0f°".format(scan.headForward), style = MaterialTheme.typography.titleMedium)
                 }
             }
         }

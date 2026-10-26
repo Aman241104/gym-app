@@ -1,5 +1,7 @@
 package app.gymapp.ui.run
 
+import app.gymapp.ui.design.Accent
+import androidx.compose.material3.ButtonDefaults
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -73,17 +75,17 @@ fun RunScreen(onOpenRun: () -> Unit) {
     }
 
     LazyColumn(contentPadding = ScreenPadding, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { ScreenHeader("Couch to 5K", "Run") }
+        item { ScreenHeader("Couch to 5K", "Run", "easy", Accent.Run.color) }
         if (live.active) item {
             Button(onClick = onOpenRun, modifier = Modifier.fillMaxWidth().height(56.dp)) { Text("Run in progress · open", style = MaterialTheme.typography.titleMedium) }
         } else {
             item {
-                Panel {
+                Panel(accent = Accent.Run.color) {
                     Text("Next: Week ${next.week}, run ${next.day}", style = MaterialTheme.typography.titleLarge)
                     Muted("${next.totalSeconds / 60} min total · ${next.runSeconds / 60} min running")
                     Text(next.summary, style = MaterialTheme.typography.bodyLarge)
                     Muted("5-minute walk to warm up and to cool down. Run slowly enough to talk.")
-                    Button(onClick = { begin(next.code) }, modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 6.dp)) {
+                    Button(onClick = { begin(next.code) }, colors = ButtonDefaults.buttonColors(containerColor = Accent.Run.color), modifier = Modifier.fillMaxWidth().height(56.dp).padding(top = 6.dp)) {
                         Icon(Icons.AutoMirrored.Rounded.DirectionsRun, contentDescription = null)
                         Text("  Start run", style = MaterialTheme.typography.titleMedium)
                     }
@@ -100,8 +102,8 @@ fun RunScreen(onOpenRun: () -> Unit) {
                         Muted("Week ${w + 1}", Modifier.padding(end = 4.dp).fillMaxWidth(0.25f))
                         sessions.forEach { s ->
                             val color = when {
-                                s.code in done -> MaterialTheme.colorScheme.primary
-                                s.code == next.code -> MaterialTheme.colorScheme.tertiary
+                                s.code in done -> Accent.Run.color
+                                s.code == next.code -> Accent.Run.color.copy(alpha = 0.45f)
                                 else -> MaterialTheme.colorScheme.surfaceContainerHigh
                             }
                             Box(Modifier.size(18.dp).clip(CircleShape).background(color))

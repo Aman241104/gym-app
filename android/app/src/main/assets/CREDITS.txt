@@ -5,3 +5,5 @@ https://developers.google.com/mediapipe/solutions/vision/pose_landmarker
 ifct.json: Indian Food Composition Tables 2017 (ICMR-NIN), packaged by Subhajit Sahu as
 @ifct2017/compositions 2.0.9, MIT License, https://github.com/nodef/ifct2017
 Cooked Indian food values in the Eat tab are approximate and written for this app.
+Instrument Serif Italic font: The Instrument Serif Project Authors, SIL Open Font License 1.1.
+Packaged food data: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).

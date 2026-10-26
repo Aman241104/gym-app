@@ -14,6 +14,7 @@ kotlinxCoroutines = "1.11.0"
 junit = "4.13.2"
 coil = "3.3.0"
 mediapipe = "1.1.1"
+codeScanner = "16.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core" }
@@ -32,6 +33,7 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 mediapipe-vision = { group = "com.google.mediapipe", name = "tasks-vision", version.ref = "mediapipe" }
+code-scanner = { group = "com.google.android.gms", name = "play-services-code-scanner", version.ref = "codeScanner" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
