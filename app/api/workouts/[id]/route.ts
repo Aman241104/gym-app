@@ -1,22 +1,21 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Workout from '@/lib/models/Workout';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getUserId } from "@/lib/apiUser";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const userId = await getUserId(request);
+    if (!userId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
     await dbConnect();
-    const workout = await Workout.findOne({ _id: id, userId: session.user.id });
+    const workout = await Workout.findOne({ _id: id, userId: userId });
     
     if (!workout) {
       return NextResponse.json({ success: false, error: 'Workout not found' }, { status: 404 });
@@ -33,8 +32,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const userId = await getUserId(request);
+    if (!userId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -48,7 +47,7 @@ export async function PUT(
     
     // Ensure the workout belongs to the user
     const workout = await Workout.findOneAndUpdate(
-      { _id: id, userId: session.user.id },
+      { _id: id, userId: userId },
       body,
       {
         new: true,
@@ -71,8 +70,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const userId = await getUserId(request);
+    if (!userId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -80,7 +79,7 @@ export async function DELETE(
     await dbConnect();
     
     // Ensure the workout belongs to the user
-    const workout = await Workout.findOneAndDelete({ _id: id, userId: session.user.id });
+    const workout = await Workout.findOneAndDelete({ _id: id, userId: userId });
 
     if (!workout) {
       return NextResponse.json({ success: false, error: 'Workout not found or unauthorized' }, { status: 404 });

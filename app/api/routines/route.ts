@@ -1,18 +1,17 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Routine from '@/lib/models/Routine';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getUserId } from "@/lib/apiUser";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const userId = await getUserId(request);
+    if (!userId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     await dbConnect();
-    const routines = await Routine.find({ userId: session.user.id }).sort({ createdAt: -1 });
+    const routines = await Routine.find({ userId: userId }).sort({ createdAt: -1 });
     return NextResponse.json({ success: true, data: routines });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -22,8 +21,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const userId = await getUserId(request);
+    if (!userId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const routineData = {
       ...body,
-      userId: session.user.id
+      userId: userId
     };
     const routine = await Routine.create(routineData);
     return NextResponse.json({ success: true, data: routine }, { status: 201 });

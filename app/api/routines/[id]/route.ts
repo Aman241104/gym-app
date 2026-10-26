@@ -1,22 +1,21 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import Routine from '@/lib/models/Routine';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getUserId } from "@/lib/apiUser";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const userId = await getUserId(request);
+    if (!userId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
     await dbConnect();
-    const routine = await Routine.findOne({ _id: id, userId: session.user.id });
+    const routine = await Routine.findOne({ _id: id, userId: userId });
     
     if (!routine) {
       return NextResponse.json({ success: false, error: 'Routine not found' }, { status: 404 });
@@ -33,14 +32,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const userId = await getUserId(request);
+    if (!userId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
     await dbConnect();
-    const routine = await Routine.findOneAndDelete({ _id: id, userId: session.user.id });
+    const routine = await Routine.findOneAndDelete({ _id: id, userId: userId });
 
     if (!routine) {
       return NextResponse.json({ success: false, error: 'Routine not found or unauthorized' }, { status: 404 });

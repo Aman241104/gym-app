@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import UserSettings from '@/lib/models/UserSettings';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getUserId } from "@/lib/apiUser";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const userId = await getUserId(request);
+    if (!userId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     await dbConnect();
-    let settings = await UserSettings.findOne({ userId: session.user.id });
+    let settings = await UserSettings.findOne({ userId: userId });
     
     if (!settings) {
-      settings = await UserSettings.create({ userId: session.user.id, unit: 'kg' });
+      settings = await UserSettings.create({ userId: userId, unit: 'kg' });
     }
 
     return NextResponse.json({ success: true, data: settings });
@@ -27,8 +26,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const userId = await getUserId(request);
+    if (!userId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -36,8 +35,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     const settings = await UserSettings.findOneAndUpdate(
-      { userId: session.user.id },
-      { ...body, userId: session.user.id },
+      { userId: userId },
+      { ...body, userId: userId },
       { new: true, upsert: true, runValidators: true }
     );
 

@@ -3,11 +3,13 @@ import { Schema, model, models, Document } from 'mongoose';
 export interface IUserSettings extends Document {
   userId: string;
   unit: 'kg' | 'lbs';
+  equipment: string[];
 }
 
 const UserSettingsSchema = new Schema<IUserSettings>({
   userId: { type: String, required: true, unique: true, index: true },
   unit: { type: String, enum: ['kg', 'lbs'], default: 'kg' },
+  equipment: [{ type: String }],
 });
 
 const UserSettings = models.UserSettings || model<IUserSettings>('UserSettings', UserSettingsSchema);
